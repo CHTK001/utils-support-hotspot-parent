@@ -1,0 +1,84 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    Redis热点监控模块 - utils-support-hotspot-redis
+
+    该模块提供Redis缓存操作的运行时监控和性能分析功能，包括：
+
+    主要功能：
+    - Redis操作监控：实时监控Redis命令执行情况
+    - 性能指标收集：响应时间、吞吐量、错误率等指标
+    - 连接池监控：连接池状态、活跃连接数、等待队列等
+    - 慢查询检测：自动识别和记录慢查询操作
+    - 热点Key分析：统计访问频率最高的Key
+    - 异常监控：Redis连接异常、超时等问题监控
+    - 内存使用分析：Redis内存使用情况统计
+
+    监控对象：
+    - Jedis客户端操作监控
+    - Spring Data Redis操作监控
+    - 连接池状态监控
+    - 集群模式监控
+
+    技术特点：
+    - 基于字节码增强技术
+    - 运行时动态监控
+    - 低性能开销
+    - 无侵入性设计
+
+    版本：4.0.0.33
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <!-- 继承热点监控父模块 -->
+    <parent>
+        <groupId>com.chua</groupId>
+        <artifactId>utils-support-hotspot-parent</artifactId>
+        <version>4.0.0.33</version>
+    </parent>
+
+    <!-- 模块标识 -->
+    <artifactId>utils-support-hotspot-jedis</artifactId>
+    <name>Utils Support Hotspot Jedis - Jedis热点监控模块</name>
+    <description>Jedis缓存操作热点监控模块</description>
+
+    <!-- 项目属性配置 -->
+    <properties>
+        <!-- Java版本：使用Java 21 LTS版本 -->
+        <maven.compiler.source>21</maven.compiler.source>
+        <maven.compiler.target>21</maven.compiler.target>
+        <!-- 项目编码：统一使用UTF-8编码 -->
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    </properties>
+    <!-- 依赖配置 -->
+    <dependencies>
+        <!-- Jedis：Redis Java客户端 -->
+        <!-- 功能：提供Redis基础操作API，用于监控Jedis操作 -->
+        <!-- 作用域：provided - 运行时由目标应用提供 -->
+        <!-- 版本：5.1.2 - 稳定版本，支持Redis 7.x -->
+        <dependency>
+            <groupId>redis.clients</groupId>
+            <artifactId>jedis</artifactId>
+            <version>5.1.2</version>
+        </dependency>
+
+        <!-- 热点监控核心模块：提供监控基础设施 -->
+        <!-- 功能：字节码增强、监控数据收集、性能指标统计 -->
+        <dependency>
+            <groupId>com.chua</groupId>
+            <artifactId>utils-support-hotspot-core</artifactId>
+            <version>4.0.0.33</version>
+        </dependency>
+
+        <!-- Spring Data Redis：Spring Redis集成 -->
+        <!-- 功能：提供Spring Redis操作监控支持 -->
+        <!-- 版本：3.2.4 - 支持Spring Boot 3.x -->
+        <dependency>
+            <groupId>org.springframework.data</groupId>
+            <artifactId>spring-data-redis</artifactId>
+            <version>3.2.4</version>
+        </dependency>
+    </dependencies>
+</project>

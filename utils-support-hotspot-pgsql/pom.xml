@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>com.chua</groupId>
+        <artifactId>utils-support-hotspot-parent</artifactId>
+        <version>4.0.0.33</version>
+    </parent>
+
+    <artifactId>utils-support-hotspot-pgsql</artifactId>
+    <name>Utils Support Hotspot PostgreSQL - PostgreSQL热点监控模块</name>
+    <description>
+        Utils Support Hotspot PostgreSQL - PostgreSQL热点监控模块
+
+        该模块提供PostgreSQL数据库的热点监控功能。
+
+        主要特性：
+        - 🔧 SQL执行监控：监控SQL语句执行
+        - 🚀 性能分析：SQL执行时间和性能指标
+        - 🛡️ 链路追踪：集成链路追踪支持
+        - 📚 服务发现：自动发现PostgreSQL服务实例
+    </description>
+
+    <properties>
+        <maven.compiler.source>21</maven.compiler.source>
+        <maven.compiler.target>21</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    </properties>
+    <dependencies>
+        <dependency>
+            <groupId>com.chua</groupId>
+            <artifactId>utils-support-hotspot-core</artifactId>
+            <version>4.0.0.33</version>
+        </dependency>
+    </dependencies>
+</project>

@@ -1,0 +1,124 @@
+
+/* From Uiverse.io by Nawsome */
+.boxes[data-v-d06809b2] {
+  --size: 32px;
+  --duration: 800ms;
+  height: calc(32px * 2);
+  height: calc(var(--size) * 2);
+  width: calc(32px * 3);
+  width: calc(var(--size) * 3);
+  position: relative;
+  transform-style: preserve-3d;
+  transform-origin: 50% 50%;
+  margin-top: calc(32px * 1.5 * -1);
+  margin-top: calc(var(--size) * 1.5 * -1);
+  transform: rotateX(60deg) rotateZ(45deg) rotateY(0deg) translateZ(0px);
+}
+.boxes .box[data-v-d06809b2] {
+  width: var(--size);
+  height: var(--size);
+  top: 0;
+  left: 0;
+  position: absolute;
+  transform-style: preserve-3d;
+}
+.boxes .box[data-v-d06809b2]:nth-child(1) {
+  transform: translate(100%, 0);
+  animation: box1-d06809b2 var(--duration) linear infinite;
+}
+.boxes .box[data-v-d06809b2]:nth-child(2) {
+  transform: translate(0, 100%);
+  animation: box2-d06809b2 var(--duration) linear infinite;
+}
+.boxes .box[data-v-d06809b2]:nth-child(3) {
+  transform: translate(100%, 100%);
+  animation: box3-d06809b2 var(--duration) linear infinite;
+}
+.boxes .box[data-v-d06809b2]:nth-child(4) {
+  transform: translate(200%, 0);
+  animation: box4-d06809b2 var(--duration) linear infinite;
+}
+.boxes .box > div[data-v-d06809b2] {
+  --background: #5c8df6;
+  --top: auto;
+  --right: auto;
+  --bottom: auto;
+  --left: auto;
+  --translateZ: calc(var(--size) / 2);
+  --rotateY: 0deg;
+  --rotateX: 0deg;
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background: #5c8df6;
+  background: var(--background);
+  top: auto;
+  top: var(--top);
+  right: auto;
+  right: var(--right);
+  bottom: auto;
+  bottom: var(--bottom);
+  left: auto;
+  left: var(--left);
+  transform: rotateY(0deg) rotateX(0deg) translateZ(var(--translateZ));
+  transform: rotateY(var(--rotateY)) rotateX(var(--rotateX)) translateZ(var(--translateZ));
+}
+.boxes .box > div[data-v-d06809b2]:nth-child(1) {
+  --top: 0;
+  --left: 0;
+}
+.boxes .box > div[data-v-d06809b2]:nth-child(2) {
+  --background: #145af2;
+  --right: 0;
+  --rotateY: 90deg;
+}
+.boxes .box > div[data-v-d06809b2]:nth-child(3) {
+  --background: #447cf5;
+  --rotateX: -90deg;
+}
+.boxes .box > div[data-v-d06809b2]:nth-child(4) {
+  --background: #dbe3f4;
+  --top: 0;
+  --left: 0;
+  --translateZ: calc(var(--size) * 3 * -1);
+}
+@keyframes box1-d06809b2 {
+0%,
+  50% {
+    transform: translate(100%, 0);
+}
+100% {
+    transform: translate(200%, 0);
+}
+}
+@keyframes box2-d06809b2 {
+0% {
+    transform: translate(0, 100%);
+}
+50% {
+    transform: translate(0, 0);
+}
+100% {
+    transform: translate(100%, 0);
+}
+}
+@keyframes box3-d06809b2 {
+0%,
+  50% {
+    transform: translate(100%, 100%);
+}
+100% {
+    transform: translate(0, 100%);
+}
+}
+@keyframes box4-d06809b2 {
+0% {
+    transform: translate(200%, 0);
+}
+50% {
+    transform: translate(200%, 100%);
+}
+100% {
+    transform: translate(100%, 100%);
+}
+}

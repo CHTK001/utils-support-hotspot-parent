@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>com.chua</groupId>
+        <artifactId>utils-support-hotspot-parent</artifactId>
+        <version>4.0.0.33</version>
+    </parent>
+
+    <artifactId>utils-support-hotspot-micrometer</artifactId>
+    <name>Utils Support Hotspot Micrometer - Micrometer指标监控模块</name>
+    <description>Micrometer metrics热点监控插件</description>
+
+    <dependencies>
+        <!-- 核心模块依赖 -->
+        <dependency>
+            <groupId>com.chua</groupId>
+            <artifactId>utils-support-hotspot-core</artifactId>
+            <version>4.0.0.33</version>
+        </dependency>
+
+        <!-- Micrometer Core -->
+        <dependency>
+            <groupId>io.micrometer</groupId>
+            <artifactId>micrometer-core</artifactId>
+            <version>1.10.0</version>
+        </dependency>
+    </dependencies>
+</project>

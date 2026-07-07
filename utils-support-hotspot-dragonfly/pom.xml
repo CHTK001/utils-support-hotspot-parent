@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    Dragonfly热点监控模块 - utils-support-hotspot-dragonfly
+
+    该模块提供Dragonfly缓存操作的运行时监控和性能分析功能。
+    Dragonfly是与Redis API兼容的高性能内存数据存储。
+
+    主要功能：
+    - Dragonfly操作监控：实时监控命令执行情况
+    - 性能指标收集：响应时间、吞吐量、错误率等指标
+    - 连接池监控：连接池状态、活跃连接数、等待队列等
+    - 慢查询检测：自动识别和记录慢查询操作
+    - 热点Key分析：统计访问频率最高的Key
+    - 异常监控：连接异常、超时等问题监控
+    - 链路追踪：完整的调用链路追踪支持
+
+    监控对象：
+    - Jedis客户端操作监控（Dragonfly兼容Redis协议）
+    - 连接池状态监控
+
+    技术特点：
+    - 基于字节码增强技术
+    - 运行时动态监控
+    - 低性能开销
+    - 无侵入性设计
+
+    版本：4.0.0.33
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <!-- 继承热点监控父模块 -->
+    <parent>
+        <groupId>com.chua</groupId>
+        <artifactId>utils-support-hotspot-parent</artifactId>
+        <version>4.0.0.33</version>
+    </parent>
+
+    <!-- 模块标识 -->
+    <artifactId>utils-support-hotspot-dragonfly</artifactId>
+    <name>Utils Support Hotspot Dragonfly - Dragonfly热点监控模块</name>
+    <description>Dragonfly缓存操作热点监控模块，提供Redis兼容的高性能内存数据存储监控</description>
+
+    <!-- 项目属性配置 -->
+    <properties>
+        <!-- Java版本：使用Java 21 LTS版本 -->
+        <maven.compiler.source>21</maven.compiler.source>
+        <maven.compiler.target>21</maven.compiler.target>
+        <!-- 项目编码：统一使用UTF-8编码 -->
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    </properties>
+
+    <!-- 依赖配置 -->
+    <dependencies>
+        <!-- Jedis：Redis/Dragonfly Java客户端 -->
+        <!-- 功能：Dragonfly完全兼容Redis协议，可直接使用Jedis连接 -->
+        <!-- 版本：5.1.2 - 稳定版本 -->
+        <dependency>
+            <groupId>redis.clients</groupId>
+            <artifactId>jedis</artifactId>
+            <version>5.1.2</version>
+        </dependency>
+
+        <!-- 热点监控核心模块：提供监控基础设施 -->
+        <!-- 功能：字节码增强、监控数据收集、性能指标统计 -->
+        <dependency>
+            <groupId>com.chua</groupId>
+            <artifactId>utils-support-hotspot-core</artifactId>
+            <version>4.0.0.33</version>
+        </dependency>
+    </dependencies>
+</project>

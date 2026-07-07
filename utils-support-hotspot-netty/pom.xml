@@ -1,0 +1,51 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>com.chua</groupId>
+        <artifactId>utils-support-hotspot-parent</artifactId>
+        <version>4.0.0.33</version>
+    </parent>
+
+    <artifactId>utils-support-hotspot-netty</artifactId>
+    <name>Utils Support Hotspot Netty - Netty热点监控模块</name>
+    <description>
+        Utils Support Hotspot Netty - Netty热点监控模块
+
+        该模块提供专业的功能支持和工具集成。
+
+        主要特性：
+        - 🔧 功能完整：提供完整的功能实现
+        - 🚀 性能优化：高性能的实现方案
+        - 🛡️ 稳定可靠：经过充分测试和验证
+        - 📚 文档完善：详细的使用文档和示例
+        - 🔄 易于集成：简单的 API 和配置方式
+
+        适用场景：
+        - 企业级应用开发
+        - 系统集成项目
+        - 工具链构建
+        - 第三方服务集成
+    </description>
+
+    <properties>
+        <maven.compiler.source>21</maven.compiler.source>
+        <maven.compiler.target>21</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    </properties>
+    <dependencies>
+        <dependency>
+            <groupId>io.netty</groupId>
+            <artifactId>netty-all</artifactId>
+            <version>4.0.11.Final</version>
+                   </dependency>
+
+        <dependency>
+            <groupId>com.chua</groupId>
+            <artifactId>utils-support-hotspot-core</artifactId>
+            <version>4.0.0.33</version>
+        </dependency>
+    </dependencies>
+</project>

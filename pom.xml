@@ -1,0 +1,232 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    热点监控父模块 - utils-support-hotspot-parent
+
+    该模块是Java应用热点监控和性能分析的父级POM，提供运行时监控和诊断功能
+
+    主要功能：
+    - Java Agent：基于字节码增强的运行时监控代理
+    - 性能监控：实时监控应用性能指标和热点方法
+    - 组件监控：针对各种中间件和框架的专项监控
+    - 热部署：支持代码热替换和动态更新
+    - 可视化：提供Web UI界面展示监控数据
+
+    监控组件：
+    - 数据库：MySQL、MyBatis、P6Spy SQL监控
+    - 缓存：Redis缓存操作监控
+    - 消息队列：Kafka、RabbitMQ消息监控
+    - Web服务器：Tomcat、Undertow容器监控
+    - 网络通信：Netty、OkHttp、HttpClient网络监控
+    - 序列化：FastJSON、Jackson序列化监控
+    - 分布式：Zookeeper、Dubbo3.x分布式服务监控
+    - 框架：Spring、Javax、Jakarta企业级框架监控
+    - 日志：Logger日志系统监控
+
+    技术特点：
+    - 基于Java 8兼容性设计
+    - 使用ByteBuddy和Javassist字节码操作
+    - 支持运行时动态增强
+    - 低侵入性监控方案
+
+    版本：4.0.0.33
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <!-- 项目基本信息 -->
+    <groupId>com.chua</groupId>
+    <artifactId>utils-support-hotspot-parent</artifactId>
+    <packaging>pom</packaging>
+    <version>4.0.0.33</version>
+
+    <!-- 子模块列表：各种热点监控组件 -->
+    <modules>
+        <!-- 核心模块 -->
+        <!-- Agent：Java代理核心模块 -->
+        <module>utils-support-hotspot-agent</module>
+        <!-- Core：监控核心功能模块 -->
+        <module>utils-support-hotspot-core</module>
+        <!-- UI：Web界面展示模块（已禁用，使用独立 Vue 项目测试）-->
+        <!-- <module>utils-support-hotspot-ui</module> -->
+
+        <!-- 数据库监控 -->
+        <!-- P6Spy：SQL语句监控 -->
+        <module>utils-support-hotspot-p6spy</module>
+        <!-- Jedis：Jedis缓存监控 -->
+        <module>utils-support-hotspot-jedis</module>
+        <!-- Dragonfly：Dragonfly缓存监控 -->
+        <module>utils-support-hotspot-dragonfly</module>
+        <!-- Lettuce：Lettuce缓存监控 -->
+        <module>utils-support-hotspot-lettuce</module>
+        <!-- MyBatis：MyBatis ORM监控 -->
+        <module>utils-support-hotspot-mybatis</module>
+        <!-- MySQL：MySQL数据库监控 -->
+        <module>utils-support-hotspot-mysql</module>
+        <!-- PostgreSQL：PostgreSQL数据库监控 -->
+        <module>utils-support-hotspot-pgsql</module>
+        <!-- Oracle：Oracle数据库监控 -->
+        <module>utils-support-hotspot-oracle</module>
+        <!-- SQL Server：SQL Server数据库监控 -->
+        <module>utils-support-hotspot-sqlserver</module>
+
+        <!-- Web服务器监控 -->
+        <!-- Tomcat9x：Tomcat 9.x容器监控 -->
+        <module>utils-support-hotspot-tomcat9x</module>
+        <!-- Tomcat10x：Tomcat 10.x容器监控 -->
+        <module>utils-support-hotspot-tomcat10x</module>
+        <!-- Undertow：Undertow容器监控 -->
+        <module>utils-support-hotspot-undertow</module>
+        <!-- Jetty：Jetty容器监控 -->
+        <module>utils-support-hotspot-jetty</module>
+
+        <!-- 分布式服务监控 -->
+        <!-- Zookeeper：Zookeeper协调服务监控 -->
+        <module>utils-support-hotspot-zookeeper</module>
+        <!-- Dubbo3x：Dubbo3.x微服务监控 -->
+        <module>utils-support-hotspot-dubbo3x</module>
+        <!-- Dubbo2x：Dubbo2.x微服务监控 -->
+        <module>utils-support-hotspot-dubbo2x</module>
+
+        <!-- 网络通信监控 -->
+        <!-- Netty：Netty网络框架监控 -->
+        <module>utils-support-hotspot-netty</module>
+        <!-- OkHttp：OkHttp客户端监控 -->
+        <module>utils-support-hotspot-okhttp</module>
+        <!-- HttpClient 3.x：Apache Commons HttpClient 3.x监控 -->
+        <module>utils-support-hotspot-httpclient3x</module>
+        <!-- HttpClient 4.x：Apache HttpClient 4.x监控 -->
+        <module>utils-support-hotspot-httpclient4x</module>
+        <!-- HttpClient 5.x：Apache HttpClient 5.x监控 -->
+        <module>utils-support-hotspot-httpclient5x</module>
+
+        <!-- 序列化监控 -->
+        <!-- FastJSON：FastJSON序列化监控 -->
+        <module>utils-support-hotspot-fastjson</module>
+        <!-- Jackson：Jackson序列化监控 -->
+        <module>utils-support-hotspot-jackson</module>
+
+        <!-- 消息队列监控 -->
+        <!-- Kafka：Kafka消息队列监控 -->
+        <module>utils-support-hotspot-kafka</module>
+        <!-- RabbitMQ：RabbitMQ消息队列监控 -->
+        <module>utils-support-hotspot-rabbit</module>
+
+        <!-- 系统监控 -->
+        <!-- Logger：日志系统监控 -->
+        <module>utils-support-hotspot-logger</module>
+        <!-- Spring5x：Spring 5.x框架监控 -->
+        <module>utils-support-hotspot-spring5x</module>
+        <!-- Spring6x：Spring 6.x框架监控 -->
+        <module>utils-support-hotspot-spring6x</module>
+
+        <!-- 热部署 -->
+        <!-- HotSwap：代码热替换功能 -->
+        <module>utils-support-hotspot-hotswap</module>
+
+        <!-- JVM 性能监控 -->
+        <!-- JFR：JDK Flight Recorder 集成 -->
+        <module>utils-support-hotspot-jfr</module>
+
+        <!-- 微服务监控 -->
+        <!-- Nacos：Nacos 服务注册与配置中心监控 -->
+        <module>utils-support-hotspot-nacos</module>
+
+        <!-- 指标监控 -->
+        <!-- Micrometer：Micrometer 指标监控 -->
+        <module>utils-support-hotspot-micrometer</module>
+
+        <!-- 性能分析 -->
+        <!-- Profiler：慢方法分析模块 -->
+        <module>utils-support-hotspot-profiler</module>
+    </modules>
+
+    <!-- 项目属性配置 -->
+    <properties>
+        <!-- Java版本：使用Java 8保证最大兼容性 -->
+        <java.version>8</java.version>
+        <maven.compiler.source>8</maven.compiler.source>
+        <maven.compiler.target>8</maven.compiler.target>
+        <!-- 项目编码：统一使用UTF-8编码 -->
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <!-- Agent主类：Java Agent的premain方法入口 -->
+        <premain>com.chua.hotspot.agent.support.Agent</premain>
+    </properties>
+
+    <!-- 公共依赖：所有热点监控子模块都会继承 -->
+    <dependencies>
+        <!-- Lombok：简化Java代码编写，编译时生成代码 -->
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <version>1.18.42</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <!-- ByteBuddy：Java字节码操作库，用于运行时代码增强 -->
+        <dependency>
+            <groupId>net.bytebuddy</groupId>
+            <artifactId>byte-buddy</artifactId>
+            <version>1.15.7</version>
+        </dependency>
+
+        <!-- ByteBuddy Agent：ByteBuddy的Agent支持库 -->
+        <dependency>
+            <groupId>net.bytebuddy</groupId>
+            <artifactId>byte-buddy-agent</artifactId>
+            <version>1.15.7</version>
+        </dependency>
+
+        <!-- Javassist：Java字节码操作工具，用于动态修改类 -->
+        <dependency>
+            <groupId>org.javassist</groupId>
+            <artifactId>javassist</artifactId>
+            <version>3.30.2-GA</version>
+        </dependency>
+    </dependencies>
+
+    <!-- 构建配置 -->
+    <build>
+        <plugins>
+            <!-- Maven编译插件：配置Java 8编译参数 -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.14.1</version>
+                <configuration>
+                    <!-- 源代码兼容性：Java 8 -->
+                    <source>8</source>
+                    <!-- 目标字节码版本：Java 8 -->
+                    <target>8</target>
+                    <!-- 发布版本：Java 8 -->
+                    <release>8</release>
+                    <!-- 注解处理器配置：确保Lombok正常工作 -->
+                    <annotationProcessorPaths>
+                        <path>
+                            <groupId>org.projectlombok</groupId>
+                            <artifactId>lombok</artifactId>
+                            <version>1.18.42</version>
+                        </path>
+                    </annotationProcessorPaths>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
+    <!-- 分发管理：配置Maven仓库发布地址 -->
+    <distributionManagement>
+        <!-- 正式版本发布仓库 -->
+        <repository>
+            <id>boren001</id>
+            <name>boren001</name>
+            <url>http://192.168.110.100:8081/repository/maven-releases/</url>
+        </repository>
+        <snapshotRepository>
+            <id>boren001</id>
+            <name>boren001</name>
+            <url>http://192.168.110.100:8081/repository/maven-releases/</url>
+        </snapshotRepository>
+    </distributionManagement>
+
+</project>

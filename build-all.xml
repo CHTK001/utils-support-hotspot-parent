@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="build-all-versions" default="build-all" basedir=".">
+    <description>Build all Java versions in one command</description>
+    
+    <target name="build-all" description="Build all Java versions">
+        <echo message="========================================"/>
+        <echo message="Building All Java Versions"/>
+        <echo message="========================================"/>
+        
+        <!-- Clean output directory -->
+        <delete dir="output" quiet="true"/>
+        
+        <!-- Build Java 8 -->
+        <echo message="Building Java 8..."/>
+        <exec executable="cmd" osfamily="windows" failonerror="true">
+            <arg value="/c"/>
+            <arg value="mvn"/>
+            <arg value="clean"/>
+            <arg value="package"/>
+            <arg value="-pl"/>
+            <arg value="utils-support-hotspot-agent"/>
+            <arg value="-am"/>
+            <arg value="-DskipTests"/>
+            <arg value="-Pjava8"/>
+        </exec>
+        <exec executable="mvn" osfamily="unix" failonerror="true">
+            <arg value="clean"/>
+            <arg value="package"/>
+            <arg value="-pl"/>
+            <arg value="utils-support-hotspot-agent"/>
+            <arg value="-am"/>
+            <arg value="-DskipTests"/>
+            <arg value="-Pjava8"/>
+        </exec>
+        
+        <!-- Build Java 17 -->
+        <echo message="Building Java 17..."/>
+        <exec executable="cmd" osfamily="windows" failonerror="true">
+            <arg value="/c"/>
+            <arg value="mvn"/>
+            <arg value="package"/>
+            <arg value="-pl"/>
+            <arg value="utils-support-hotspot-agent"/>
+            <arg value="-am"/>
+            <arg value="-DskipTests"/>
+            <arg value="-Pjava17"/>
+        </exec>
+        <exec executable="mvn" osfamily="unix" failonerror="true">
+            <arg value="package"/>
+            <arg value="-pl"/>
+            <arg value="utils-support-hotspot-agent"/>
+            <arg value="-am"/>
+            <arg value="-DskipTests"/>
+            <arg value="-Pjava17"/>
+        </exec>
+        
+        <!-- Build Java 21 -->
+        <echo message="Building Java 21..."/>
+        <exec executable="cmd" osfamily="windows" failonerror="true">
+            <arg value="/c"/>
+            <arg value="mvn"/>
+            <arg value="package"/>
+            <arg value="-pl"/>
+            <arg value="utils-support-hotspot-agent"/>
+            <arg value="-am"/>
+            <arg value="-DskipTests"/>
+            <arg value="-Pjava21"/>
+        </exec>
+        <exec executable="mvn" osfamily="unix" failonerror="true">
+            <arg value="package"/>
+            <arg value="-pl"/>
+            <arg value="utils-support-hotspot-agent"/>
+            <arg value="-am"/>
+            <arg value="-DskipTests"/>
+            <arg value="-Pjava21"/>
+        </exec>
+        
+        <echo message="========================================"/>
+        <echo message="All versions built successfully!"/>
+        <echo message="========================================"/>
+    </target>
+</project>

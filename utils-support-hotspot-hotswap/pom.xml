@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>com.chua</groupId>
+        <artifactId>utils-support-hotspot-parent</artifactId>
+        <version>4.0.0.33</version>
+    </parent>
+
+    <artifactId>utils-support-hotspot-hotswap</artifactId>
+    <name>Utils Support Hotspot HotSwap - 热替换监控模块</name>
+    <description>
+        Utils Support Hotspot HotSwap - 热替换监控模块
+
+        该模块提供 Java 应用的热重载功能，集成 HotswapAgent 实现：
+        - 类文件热替换（无需重启应用）
+        - Spring Bean 热重载
+        - 配置文件监听和重载
+
+        主要特性：
+        - 🔧 无缝热替换：支持方法体、字段、注解等修改的热替换
+        - 🚀 Spring 集成：自动处理 Spring Bean 的重新注册
+        - 🛡️ 稳定可靠：基于成熟的 HotswapAgent 框架
+        - 📚 文件监听：支持 class、jar、xml 等文件变更监听
+        - 🔄 易于集成：简单配置即可启用
+
+        适用场景：
+        - 开发环境热部署
+        - 微服务快速迭代
+        - Spring Boot 应用调试
+    </description>
+
+    <properties>
+        <maven.compiler.source>21</maven.compiler.source>
+        <maven.compiler.target>21</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <hotswap-agent.version>1.4.1</hotswap-agent.version>
+    </properties>
+
+    <dependencies>
+        <!-- HotswapAgent 核心依赖 -->
+        <dependency>
+            <groupId>org.hotswapagent</groupId>
+            <artifactId>hotswap-agent-core</artifactId>
+            <version>${hotswap-agent.version}</version>
+        </dependency>
+
+        <!-- 核心模块 -->
+        <dependency>
+            <groupId>com.chua</groupId>
+            <artifactId>utils-support-hotspot-core</artifactId>
+            <version>4.0.0.33</version>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <!-- Maven Shade Plugin - 打包成 fat jar -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-shade-plugin</artifactId>
+                <version>3.5.1</version>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
+                        <configuration>
+                            <createDependencyReducedPom>false</createDependencyReducedPom>
+                            <transformers>
+                                <!-- 配置 MANIFEST.MF 支持 javaagent -->
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                                    <manifestEntries>
+                                        <Premain-Class>org.hotswap.agent.HotswapAgent</Premain-Class>
+                                        <Agent-Class>org.hotswap.agent.HotswapAgent</Agent-Class>
+                                        <Can-Redefine-Classes>true</Can-Redefine-Classes>
+                                        <Can-Retransform-Classes>true</Can-Retransform-Classes>
+                                    </manifestEntries>
+                                </transformer>
+                                <!-- 合并 META-INF/services -->
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
+                                <!-- 合并 hotswap-agent.properties -->
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.AppendingTransformer">
+                                    <resource>hotswap-agent.properties</resource>
+                                </transformer>
+                            </transformers>
+                            <filters>
+                                <filter>
+                                    <artifact>*:*</artifact>
+                                    <excludes>
+                                        <exclude>META-INF/*.SF</exclude>
+                                        <exclude>META-INF/*.DSA</exclude>
+                                        <exclude>META-INF/*.RSA</exclude>
+                                    </excludes>
+                                </filter>
+                            </filters>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>

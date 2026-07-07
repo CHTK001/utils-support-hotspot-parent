@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>com.chua</groupId>
+        <artifactId>utils-support-hotspot-parent</artifactId>
+        <version>4.0.0.33</version>
+    </parent>
+
+    <artifactId>utils-support-hotspot-httpclient5x</artifactId>
+    <name>Utils Support Hotspot HttpClient 5.x - HttpClient 5.x热点监控模块</name>
+    <description>
+        Utils Support Hotspot HttpClient 5.x - HttpClient 5.x热点监控模块
+
+        该模块提供对 Apache HttpClient 5.x 版本的性能监控支持。
+
+        主要特性：
+        - 🔧 功能完整：提供完整的 HttpClient 5.x 监控
+        - 🚀 性能优化：高性能的实现方案
+        - 🛡️ 稳定可靠：经过充分测试和验证
+        - 📚 文档完善：详细的使用文档和示例
+        - 🔄 易于集成：简单的 API 和配置方式
+
+        适用场景：
+        - HttpClient 5.x 应用监控
+        - HTTP 客户端性能分析
+        - 网络请求追踪
+        - 服务调用监控
+    </description>
+
+    <properties>
+        <maven.compiler.source>21</maven.compiler.source>
+        <maven.compiler.target>21</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    </properties>
+
+    <dependencies>
+        <!-- 继承 HttpClient 4.x 模块 -->
+        <dependency>
+            <groupId>com.chua</groupId>
+            <artifactId>utils-support-hotspot-httpclient4x</artifactId>
+            <version>4.0.0.33</version>
+        </dependency>
+        
+        <dependency>
+            <groupId>org.apache.httpcomponents.client5</groupId>
+            <artifactId>httpclient5</artifactId>
+            <version>5.2.1</version>
+        </dependency>
+        
+        <dependency>
+            <groupId>com.chua</groupId>
+            <artifactId>utils-support-hotspot-core</artifactId>
+            <version>4.0.0.33</version>
+        </dependency>
+    </dependencies>
+
+</project>

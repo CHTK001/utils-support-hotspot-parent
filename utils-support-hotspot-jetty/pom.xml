@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>com.chua</groupId>
+        <artifactId>utils-support-hotspot-parent</artifactId>
+        <version>4.0.0.33</version>
+    </parent>
+
+    <artifactId>utils-support-hotspot-jetty</artifactId>
+    <name>Utils Support Hotspot Jetty - Jetty热点监控模块</name>
+    <description>
+        Utils Support Hotspot Jetty - Jetty热点监控模块
+
+        该模块提供 Jetty 服务器的热点监控功能。
+
+        主要特性：
+        - 🔧 功能完整：提供完整的 Jetty HTTP 请求监控
+        - 🚀 性能优化：高性能的实现方案
+        - 🛡️ 稳定可靠：经过充分测试和验证
+        - 📚 文档完善：详细的使用文档和示例
+        - 🔄 易于集成：简单的 API 和配置方式
+
+        适用场景：
+        - 使用 Jetty 作为 Web 服务器的应用
+        - Spring Boot + Jetty 的应用
+        - 嵌入式 Jetty 应用
+    </description>
+
+    <properties>
+        <maven.compiler.source>8</maven.compiler.source>
+        <maven.compiler.target>8</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    </properties>
+
+    <dependencies>
+        <!-- Jetty Server -->
+        <dependency>
+            <groupId>org.eclipse.jetty</groupId>
+            <artifactId>jetty-server</artifactId>
+            <version>11.0.15</version>
+            <scope>provided</scope>
+        </dependency>
+        
+        <!-- Jetty Servlet -->
+        <dependency>
+            <groupId>org.eclipse.jetty</groupId>
+            <artifactId>jetty-servlet</artifactId>
+            <version>11.0.15</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>com.chua</groupId>
+            <artifactId>utils-support-hotspot-core</artifactId>
+            <version>4.0.0.33</version>
+        </dependency>
+    </dependencies>
+
+</project>

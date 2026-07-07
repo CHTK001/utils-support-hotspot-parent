@@ -1,0 +1,606 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>com.chua</groupId>
+        <artifactId>utils-support-hotspot-parent</artifactId>
+        <version>4.0.0.33</version>
+    </parent>
+
+    <artifactId>utils-support-hotspot-agent</artifactId>
+    <name>Utils Support Hotspot Agent - 热点监控代理模块</name>
+    <description>
+        Utils Support Hotspot Agent - 热点监控代理模块
+
+        该模块提供专业的功能支持和工具集成。
+
+        主要特性：
+        - 🔧 功能完整：提供完整的功能实现
+        - 🚀 性能优化：高性能的实现方案
+        - 🛡️ 稳定可靠：经过充分测试和验证
+        - 📚 文档完善：详细的使用文档和示例
+        - 🔄 易于集成：简单的 API 和配置方式
+
+        适用场景：
+        - 企业级应用开发
+        - 系统集成项目
+        - 工具链构建
+        - 第三方服务集成
+    </description>
+
+    <properties>
+        <maven.compiler.source>8</maven.compiler.source>
+        <maven.compiler.target>8</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <hotswap-agent.version>1.4.1</hotswap-agent.version>
+    </properties>
+
+    <dependencies>
+        <!-- HotswapAgent 核心依赖 -->
+        <dependency>
+            <groupId>org.hotswapagent</groupId>
+            <artifactId>hotswap-agent-core</artifactId>
+            <version>${hotswap-agent.version}</version>
+        </dependency>
+
+        <!-- 核心模块：保持 compile scope -->
+        <dependency>
+            <groupId>com.chua</groupId>
+            <artifactId>utils-support-hotspot-core</artifactId>
+            <version>4.0.0.33</version>
+        </dependency>
+
+        <!-- 插件模块 -->
+        <dependency>
+            <groupId>com.chua</groupId>
+            <artifactId>utils-support-hotspot-ui</artifactId>
+            <version>4.0.0.33</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.chua</groupId>
+            <artifactId>utils-support-hotspot-jedis</artifactId>
+            <version>4.0.0.33</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.chua</groupId>
+            <artifactId>utils-support-hotspot-lettuce</artifactId>
+            <version>4.0.0.33</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.chua</groupId>
+            <artifactId>utils-support-hotspot-p6spy</artifactId>
+            <version>4.0.0.33</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.chua</groupId>
+            <artifactId>utils-support-hotspot-mybatis</artifactId>
+            <version>4.0.0.33</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.chua</groupId>
+            <artifactId>utils-support-hotspot-mysql</artifactId>
+            <version>4.0.0.33</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.chua</groupId>
+            <artifactId>utils-support-hotspot-tomcat9x</artifactId>
+            <version>4.0.0.33</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.chua</groupId>
+            <artifactId>utils-support-hotspot-undertow</artifactId>
+            <version>4.0.0.33</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.chua</groupId>
+            <artifactId>utils-support-hotspot-jetty</artifactId>
+            <version>4.0.0.33</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.chua</groupId>
+            <artifactId>utils-support-hotspot-zookeeper</artifactId>
+            <version>4.0.0.33</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.chua</groupId>
+            <artifactId>utils-support-hotspot-netty</artifactId>
+            <version>4.0.0.33</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.chua</groupId>
+            <artifactId>utils-support-hotspot-okhttp</artifactId>
+            <version>4.0.0.33</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.chua</groupId>
+            <artifactId>utils-support-hotspot-httpclient3x</artifactId>
+            <version>4.0.0.33</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.chua</groupId>
+            <artifactId>utils-support-hotspot-httpclient4x</artifactId>
+            <version>4.0.0.33</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.chua</groupId>
+            <artifactId>utils-support-hotspot-httpclient5x</artifactId>
+            <version>4.0.0.33</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.chua</groupId>
+            <artifactId>utils-support-hotspot-fastjson</artifactId>
+            <version>4.0.0.33</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.chua</groupId>
+            <artifactId>utils-support-hotspot-jackson</artifactId>
+            <version>4.0.0.33</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.chua</groupId>
+            <artifactId>utils-support-hotspot-kafka</artifactId>
+            <version>4.0.0.33</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.chua</groupId>
+            <artifactId>utils-support-hotspot-rabbit</artifactId>
+            <version>4.0.0.33</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.chua</groupId>
+            <artifactId>utils-support-hotspot-logger</artifactId>
+            <version>4.0.0.33</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.chua</groupId>
+            <artifactId>utils-support-hotspot-dubbo3x</artifactId>
+            <version>4.0.0.33</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.chua</groupId>
+            <artifactId>utils-support-hotspot-spring5x</artifactId>
+            <version>4.0.0.33</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.chua</groupId>
+            <artifactId>utils-support-hotspot-spring6x</artifactId>
+            <version>4.0.0.33</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.chua</groupId>
+            <artifactId>utils-support-hotspot-javax</artifactId>
+            <version>4.0.0.33</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.chua</groupId>
+            <artifactId>utils-support-hotspot-jakarta</artifactId>
+            <version>4.0.0.33</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.chua</groupId>
+            <artifactId>utils-support-hotspot-tomcat10x</artifactId>
+            <version>4.0.0.33</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.chua</groupId>
+            <artifactId>utils-support-hotspot-dubbo2x</artifactId>
+            <version>4.0.0.33</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.chua</groupId>
+            <artifactId>utils-support-hotspot-hotswap</artifactId>
+            <version>4.0.0.33</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.chua</groupId>
+            <artifactId>utils-support-hotspot-profiler</artifactId>
+            <version>4.0.0.33</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.chua</groupId>
+            <artifactId>utils-support-hotspot-jfr</artifactId>
+            <version>4.0.0.33</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.chua</groupId>
+            <artifactId>utils-support-hotspot-nacos</artifactId>
+            <version>4.0.0.33</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.chua</groupId>
+            <artifactId>utils-support-hotspot-micrometer</artifactId>
+            <version>4.0.0.33</version>
+        </dependency>
+    </dependencies>
+
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <version>3.6.1</version>
+                <executions>
+                    <!-- 复制 hotspot 插件模块到 plugins 目录 -->
+                    <execution>
+                        <id>copy-plugins</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>copy-dependencies</goal>
+                        </goals>
+                        <configuration>
+                            <outputDirectory>${project.build.directory}/plugins</outputDirectory>
+                            <includeGroupIds>com.chua</includeGroupIds>
+                            <excludeArtifactIds>utils-support-hotspot-core</excludeArtifactIds>
+                            <excludeTransitive>true</excludeTransitive>
+                        </configuration>
+                    </execution>
+                    <!-- 复制所有三方依赖到 libs 目录 -->
+                    <execution>
+                        <id>copy-libs</id>
+                        <phase>prepare-package</phase>
+                        <goals>
+                            <goal>copy-dependencies</goal>
+                        </goals>
+                        <configuration>
+                            <outputDirectory>${project.build.directory}/libs</outputDirectory>
+                            <excludeGroupIds>com.chua</excludeGroupIds>
+                            <excludeArtifactIds>byte-buddy,byte-buddy-agent,javassist,lombok</excludeArtifactIds>
+                            <!-- 排除 provided scope 的依赖（如 Tomcat、Servlet API 等） -->
+                            <excludeScope>provided</excludeScope>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <!-- Spring Boot Plugin - Not needed for Java Agent -->
+            <!--
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+                <version>3.0.2</version>
+            </plugin>
+            -->
+
+            <!-- Shade Plugin - Disabled, using Assembly Plugin instead -->
+            <!--
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-shade-plugin</artifactId>
+                <version>3.2.4</version>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <artifactSet>
+                        <includes>
+                            <dependency>commons-io:commons-io:2.16.1</dependency>
+                        </includes>
+                    </artifactSet>
+                </configuration>
+            </plugin>
+            -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-assembly-plugin</artifactId>
+                <version>3.6.0</version>
+                <configuration>
+                    <!-- 使用自定义描述符，排除可能冲突的库（Tomcat、Spring、Netty 等） -->
+                    <descriptors>
+                        <descriptor>src/assembly/agent-jar.xml</descriptor>
+                    </descriptors>
+                    <finalName>${project.artifactId}-${project.version}</finalName>
+                    <appendAssemblyId>false</appendAssemblyId>
+                    <archive>
+                        <manifestEntries>
+                            <Premain-Class>${premain}</Premain-Class>
+                            <Agent-Class>${premain}</Agent-Class>
+                            <Can-Retransform-Classes>true</Can-Retransform-Classes>
+                            <Can-Redefine-Classes>true</Can-Redefine-Classes>
+                            <Build-By>CH</Build-By>
+                        </manifestEntries>
+                    </archive>
+                </configuration>
+                <executions>
+                    <!-- 生成 Agent JAR -->
+                    <execution>
+                        <id>make-agent-jar</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>single</goal>
+                        </goals>
+                    </execution>
+                    <!-- 生成分发包（包含 lib 目录） -->
+                    <execution>
+                        <id>make-distribution</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>single</goal>
+                        </goals>
+                        <configuration>
+                            <descriptors>
+                                <descriptor>src/assembly/distribution.xml</descriptor>
+                            </descriptors>
+                            <finalName>${project.artifactId}-${project.version}</finalName>
+                            <appendAssemblyId>true</appendAssemblyId>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <source>8</source>
+                    <target>8</target>
+                </configuration>
+            </plugin>
+
+            <!-- 复制打包产出物到父项目的 output 目录 -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <version>3.1.0</version>
+                <executions>
+                    <execution>
+                        <id>copy-shared-to-output</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                        <configuration>
+                            <target>
+                                <!-- 创建 output 目录（不清理，因为多个 profile 会共用） -->
+                                <mkdir dir="${basedir}/../output"/>
+                                <mkdir dir="${basedir}/../output/plugins"/>
+                                <mkdir dir="${basedir}/../output/libs"/>
+                                
+                                <!-- 复制共用的 plugins 目录 -->
+                                <copy todir="${basedir}/../output/plugins">
+                                    <fileset dir="${project.build.directory}/plugins">
+                                        <include name="**/*.jar"/>
+                                    </fileset>
+                                </copy>
+                                
+                                <!-- 复制共用的 libs 目录 -->
+                                <copy todir="${basedir}/../output/libs">
+                                    <fileset dir="${project.build.directory}/libs">
+                                        <include name="**/*.jar"/>
+                                    </fileset>
+                                </copy>
+                                
+                                <echo message="共用依赖已复制到: ${basedir}/../output"/>
+                            </target>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+    
+    <!-- Maven Profiles for different Java versions -->
+    <profiles>
+        <!-- Java 8 Profile (default) -->
+        <profile>
+            <id>java8</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+            <properties>
+                <maven.compiler.source>8</maven.compiler.source>
+                <maven.compiler.target>8</maven.compiler.target>
+                <maven.compiler.release>8</maven.compiler.release>
+                <agent.classifier>java8</agent.classifier>
+            </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-jar-plugin</artifactId>
+                        <version>3.4.1</version>
+                        <configuration>
+                            <classifier>${agent.classifier}</classifier>
+                        </configuration>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-assembly-plugin</artifactId>
+                        <configuration>
+                            <finalName>${project.artifactId}-${project.version}-${agent.classifier}</finalName>
+                        </configuration>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-antrun-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>copy-to-output-java8</id>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>run</goal>
+                                </goals>
+                                <configuration>
+                                    <target>
+                                        <!-- 只复制 agent jar 到版本特定目录 -->
+                                        <mkdir dir="${basedir}/../output/${agent.classifier}"/>
+                                        <copy todir="${basedir}/../output/${agent.classifier}">
+                                            <fileset dir="${project.build.directory}">
+                                                <include name="${project.artifactId}-${project.version}-${agent.classifier}.jar"/>
+                                            </fileset>
+                                        </copy>
+                                        <echo message="Java 8 agent 已复制到: ${basedir}/../output/${agent.classifier}"/>
+                                    </target>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        
+        <!-- Java 17 Profile -->
+        <profile>
+            <id>java17</id>
+            <properties>
+                <maven.compiler.source>17</maven.compiler.source>
+                <maven.compiler.target>17</maven.compiler.target>
+                <maven.compiler.release>17</maven.compiler.release>
+                <agent.classifier>java17</agent.classifier>
+            </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-compiler-plugin</artifactId>
+                        <configuration>
+                            <source>17</source>
+                            <target>17</target>
+                            <release>17</release>
+                        </configuration>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-jar-plugin</artifactId>
+                        <version>3.4.1</version>
+                        <configuration>
+                            <classifier>${agent.classifier}</classifier>
+                        </configuration>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-assembly-plugin</artifactId>
+                        <configuration>
+                            <finalName>${project.artifactId}-${project.version}-${agent.classifier}</finalName>
+                        </configuration>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-antrun-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>copy-to-output-java17</id>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>run</goal>
+                                </goals>
+                                <configuration>
+                                    <target>
+                                        <!-- 只复制 agent jar 到版本特定目录 -->
+                                        <mkdir dir="${basedir}/../output/${agent.classifier}"/>
+                                        <copy todir="${basedir}/../output/${agent.classifier}">
+                                            <fileset dir="${project.build.directory}">
+                                                <include name="${project.artifactId}-${project.version}-${agent.classifier}.jar"/>
+                                            </fileset>
+                                        </copy>
+                                        <echo message="Java 17 agent 已复制到: ${basedir}/../output/${agent.classifier}"/>
+                                    </target>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        
+        <!-- Java 21 Profile -->
+        <profile>
+            <id>java21</id>
+            <properties>
+                <maven.compiler.source>21</maven.compiler.source>
+                <maven.compiler.target>21</maven.compiler.target>
+                <maven.compiler.release>21</maven.compiler.release>
+                <agent.classifier>java21</agent.classifier>
+            </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-compiler-plugin</artifactId>
+                        <configuration>
+                            <source>21</source>
+                            <target>21</target>
+                            <release>21</release>
+                        </configuration>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-jar-plugin</artifactId>
+                        <version>3.4.1</version>
+                        <configuration>
+                            <classifier>${agent.classifier}</classifier>
+                        </configuration>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-assembly-plugin</artifactId>
+                        <configuration>
+                            <finalName>${project.artifactId}-${project.version}-${agent.classifier}</finalName>
+                        </configuration>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-antrun-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>copy-to-output-java21</id>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>run</goal>
+                                </goals>
+                                <configuration>
+                                    <target>
+                                        <!-- 只复制 agent jar 到版本特定目录 -->
+                                        <mkdir dir="${basedir}/../output/${agent.classifier}"/>
+                                        <copy todir="${basedir}/../output/${agent.classifier}">
+                                            <fileset dir="${project.build.directory}">
+                                                <include name="${project.artifactId}-${project.version}-${agent.classifier}.jar"/>
+                                            </fileset>
+                                        </copy>
+                                        <echo message="Java 21 agent 已复制到: ${basedir}/../output/${agent.classifier}"/>
+                                    </target>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
+</project>
