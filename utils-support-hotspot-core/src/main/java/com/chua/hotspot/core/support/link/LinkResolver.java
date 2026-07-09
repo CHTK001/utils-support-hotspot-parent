@@ -5,6 +5,7 @@ import com.chua.hotspot.core.support.span.Span;
 import com.chua.hotspot.core.support.utils.StringUtils;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * 链路解析器接口
@@ -67,4 +68,15 @@ public interface LinkResolver extends Ordered {
      * @param response 响应对象
      */
     void sendResponse(List<Span> spans, Object response);
+
+    /**
+     * 从请求参数中提取所有请求头
+     * 用于分布式链路追踪上下文传播
+     *
+     * @param args 请求参数数组
+     * @return 请求头映射（headerName → headerValue），无请求头则返回 null
+     */
+    default Map<String, String> extractHeaders(Object[] args) {
+        return null;
+    }
 }

@@ -8,6 +8,7 @@ import com.chua.hotspot.core.support.span.NewTrackManager;
 import com.chua.hotspot.core.support.span.Span;
 import com.chua.hotspot.core.support.sql.DmlFormatter;
 import com.chua.hotspot.core.support.utils.ClassUtils;
+import com.chua.hotspot.core.support.utils.FastMethodHelper;
 import com.chua.hotspot.core.support.utils.NetAddress;
 import net.bytebuddy.description.type.TypeDescription;
 import net.bytebuddy.dynamic.DynamicType;
@@ -42,6 +43,7 @@ public class OraclePlugin extends BytebuddyPlugin {
             @Super Object delegate,
             @SuperCall(nullIfImpossible = true) Callable<?> callable) throws Exception {
         
+        BytebuddyPlugin.interceptEnter();
         long startTime = System.currentTimeMillis();
         String sql = null;
         String address = null;
@@ -59,6 +61,7 @@ public class OraclePlugin extends BytebuddyPlugin {
             call = NewTrackManager.invoke(callable);
         } catch (Exception e) {
             error = e.getMessage();
+            BytebuddyPlugin.interceptError();
             throw e;
         } finally {
             long duration = System.currentTimeMillis() - startTime;
@@ -68,6 +71,7 @@ public class OraclePlugin extends BytebuddyPlugin {
                 String fullAddress = address != null ? address + "/" + database : database;
                 SqlMonitorApi.addSqlRecord(sql, duration, error, fullAddress, database);
             }
+            BytebuddyPlugin.interceptExit();
         }
         return call;
     }
@@ -114,11 +118,7 @@ public class OraclePlugin extends BytebuddyPlugin {
             Object connection = ClassUtils.getObject("connection", target);
             if (connection != null) {
                 // 获取 URL 解析地址
-                Method getURLMethod = connection.getClass().getMethod("getURL");
-                if (!getURLMethod.isAccessible()) {
-                    getURLMethod.setAccessible(true);
-                }
-                String url = (String) getURLMethod.invoke(connection);
+                String url = FastMethodHelper.invokeString(connection, "getURL");
                 // jdbc:oracle:thin:@//host:port/service 或 jdbc:oracle:thin:@host:port:sid
                 if (url != null) {
                     String addr = parseOracleUrl(url);
@@ -183,12 +183,8 @@ public class OraclePlugin extends BytebuddyPlugin {
             Object connection = ClassUtils.getObject("connection", target);
             if (connection != null) {
                 // Oracle 使用 schema 作为数据库
-                Method method = connection.getClass().getMethod("getCurrentSchema");
-                if (!method.isAccessible()) {
-                    method.setAccessible(true);
-                }
-                Object result = method.invoke(connection);
-                return result != null ? result.toString() : "";
+                String result = FastMethodHelper.invokeString(connection, "getCurrentSchema");
+                return result != null ? result : "";
             }
         } catch (Exception ignored) {
         }
@@ -203,12 +199,8 @@ public class OraclePlugin extends BytebuddyPlugin {
                 return sql.toString();
             }
             // 备选方案：调用 getOriginalSql 方法
-            Method method = target.getClass().getMethod("getOriginalSql");
-            if (!method.isAccessible()) {
-                method.setAccessible(true);
-            }
-            Object result = method.invoke(target);
-            return result != null ? result.toString() : "";
+            String result = FastMethodHelper.invokeString(target, "getOriginalSql");
+            return result != null ? result : "";
         } catch (Exception ignored) {
         }
         return "";

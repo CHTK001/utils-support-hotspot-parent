@@ -34,9 +34,24 @@
         <maven.compiler.source>8</maven.compiler.source>
         <maven.compiler.target>8</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <hotswap-agent.version>1.4.1</hotswap-agent.version>
     </properties>
 
     <dependencies>
+        <!-- Spy 桥接模块：Bootstrap CL 注入的零依赖桥接层（provided - 运行时由 Bootstrap CL 加载） -->
+        <dependency>
+            <groupId>com.chua</groupId>
+            <artifactId>utils-support-hotspot-spy</artifactId>
+            <version>${project.version}</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <!-- HotswapAgent 核心依赖 -->
+        <dependency>
+            <groupId>org.hotswapagent</groupId>
+            <artifactId>hotswap-agent-core</artifactId>
+            <version>${hotswap-agent.version}</version>
+        </dependency>
         <!-- ByteBuddy：字节码增强库 -->
         <dependency>
             <groupId>net.bytebuddy</groupId>
@@ -56,14 +71,6 @@
             <groupId>org.javassist</groupId>
             <artifactId>javassist</artifactId>
             <version>3.29.2-GA</version>
-        </dependency>
-
-        <!-- Lombok：代码简化库 -->
-        <dependency>
-            <groupId>org.projectlombok</groupId>
-            <artifactId>lombok</artifactId>
-            <version>1.18.30</version>
-            <scope>provided</scope>
         </dependency>
 
         <!-- Jackson：JSON处理库 -->
@@ -142,6 +149,101 @@
             <artifactId>sqlite-jdbc</artifactId>
             <version>3.45.0.0</version>
         </dependency>
+
     </dependencies>
+
+    <build>
+        <plugins>
+            <!-- 复制依赖到 target 目录 -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <version>3.6.1</version>
+                <executions>
+                    <!-- 复制 hotspot 插件模块到 plugins 目录 -->
+                    <execution>
+                        <id>copy-plugins</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>copy-dependencies</goal>
+                        </goals>
+                        <configuration>
+                            <outputDirectory>${project.build.directory}/plugins</outputDirectory>
+                            <includeGroupIds>com.chua</includeGroupIds>
+                            <excludeArtifactIds>utils-support-hotspot-core,utils-support-hotspot-spy</excludeArtifactIds>
+                            <excludeTransitive>true</excludeTransitive>
+                        </configuration>
+                    </execution>
+                    <!-- 复制所有三方依赖到 libs 目录 -->
+                    <execution>
+                        <id>copy-libs</id>
+                        <phase>prepare-package</phase>
+                        <goals>
+                            <goal>copy-dependencies</goal>
+                        </goals>
+                        <configuration>
+                            <outputDirectory>${project.build.directory}/libs</outputDirectory>
+                            <excludeGroupIds>com.chua</excludeGroupIds>
+                            <excludeScope>provided</excludeScope>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!-- 复制打包产出物到父项目的 output 目录 -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <version>3.1.0</version>
+                <executions>
+                    <execution>
+                        <id>copy-to-output</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                        <configuration>
+                            <target>
+                                <!-- 创建 output 目录 -->
+                                <mkdir dir="${basedir}/../output"/>
+                                <mkdir dir="${basedir}/../output/plugins"/>
+                                <mkdir dir="${basedir}/../output/libs"/>
+
+                                <!-- 复制 core jar 到 libs 目录 -->
+                                <copy todir="${basedir}/../output/libs">
+                                    <fileset dir="${project.build.directory}">
+                                        <include name="${project.artifactId}-${project.version}.jar"/>
+                                    </fileset>
+                                </copy>
+
+                                <!-- 复制 spy jar 到 output 根目录 -->
+                                <copy todir="${basedir}/../output">
+                                    <fileset dir="${basedir}/../utils-support-hotspot-spy/target">
+                                        <include name="spy.jar"/>
+                                    </fileset>
+                                </copy>
+
+                                <!-- 复制 plugins 目录（目录可能不存在，如无插件依赖时） -->
+                                <copy todir="${basedir}/../output/plugins" failonerror="false">
+                                    <fileset dir="${project.build.directory}/plugins" erroronmissingdir="false">
+                                        <include name="**/*.jar"/>
+                                    </fileset>
+                                </copy>
+
+                                <!-- 复制 libs 目录（三方依赖） -->
+                                <copy todir="${basedir}/../output/libs" failonerror="false">
+                                    <fileset dir="${project.build.directory}/libs" erroronmissingdir="false">
+                                        <include name="**/*.jar"/>
+                                    </fileset>
+                                </copy>
+
+                                <echo message="Core 依赖已复制到: ${basedir}/../output"/>
+                            </target>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
 
 </project>

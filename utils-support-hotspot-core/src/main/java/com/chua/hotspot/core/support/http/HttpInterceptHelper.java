@@ -2,6 +2,7 @@ package com.chua.hotspot.core.support.http;
 
 import com.chua.hotspot.core.support.perf.HttpPerformanceRecorder;
 import com.chua.hotspot.core.support.recorder.MappingQpsRecorder;
+import com.chua.hotspot.core.support.monitor.AgentSelfMonitor;
 import com.chua.hotspot.core.support.span.Span;
 import com.chua.hotspot.core.support.trace.TraceHelper;
 import com.chua.hotspot.core.support.utils.ClassUtils;
@@ -81,6 +82,10 @@ public class HttpInterceptHelper {
      */
     public static void after(HttpContext ctx, Object[] args) {
         if (ctx == null) return;
+        
+        // 上报拦截耗时到 AgentSelfMonitor
+        long costNanos = (System.currentTimeMillis() - ctx.startTime) * 1_000_000L;
+        AgentSelfMonitor.getInstance().recordIntercept(costNanos);
         
         try {
             if (ctx.url != null && ctx.httpMethod != null && !"null".equals(ctx.url)) {

@@ -1,7 +1,5 @@
 package com.chua.hotspot.core.support.server.api;
 
-import lombok.Data;
-
 import java.lang.management.ThreadInfo;
 import java.util.Arrays;
 import java.util.Collections;
@@ -11,14 +9,13 @@ import java.util.stream.Collectors;
 /**
  * 线程信息 DTO
  * <p>
- * 用于替代直接序列化 {@link ThreadInfo}，避免 Java 模块系统的反射限制
+ * 用于替代直接序列化 {@link ThreadInfo}，避免 Java 模块系统反射限制
  * </p>
  *
  * @author CH
  * @version 4.0.0.34
  * @since 2024/12/12
  */
-@Data
 public class ThreadInfoDTO {
 
     /**
@@ -85,6 +82,110 @@ public class ThreadInfoDTO {
      * 堆栈跟踪
      */
     private List<String> stackTrace;
+
+    public long getThreadId() {
+        return threadId;
+    }
+
+    public void setThreadId(long threadId) {
+        this.threadId = threadId;
+    }
+
+    public String getThreadName() {
+        return threadName;
+    }
+
+    public void setThreadName(String threadName) {
+        this.threadName = threadName;
+    }
+
+    public String getThreadState() {
+        return threadState;
+    }
+
+    public void setThreadState(String threadState) {
+        this.threadState = threadState;
+    }
+
+    public long getBlockedCount() {
+        return blockedCount;
+    }
+
+    public void setBlockedCount(long blockedCount) {
+        this.blockedCount = blockedCount;
+    }
+
+    public long getBlockedTime() {
+        return blockedTime;
+    }
+
+    public void setBlockedTime(long blockedTime) {
+        this.blockedTime = blockedTime;
+    }
+
+    public long getWaitedCount() {
+        return waitedCount;
+    }
+
+    public void setWaitedCount(long waitedCount) {
+        this.waitedCount = waitedCount;
+    }
+
+    public long getWaitedTime() {
+        return waitedTime;
+    }
+
+    public void setWaitedTime(long waitedTime) {
+        this.waitedTime = waitedTime;
+    }
+
+    public String getLockName() {
+        return lockName;
+    }
+
+    public void setLockName(String lockName) {
+        this.lockName = lockName;
+    }
+
+    public long getLockOwnerId() {
+        return lockOwnerId;
+    }
+
+    public void setLockOwnerId(long lockOwnerId) {
+        this.lockOwnerId = lockOwnerId;
+    }
+
+    public String getLockOwnerName() {
+        return lockOwnerName;
+    }
+
+    public void setLockOwnerName(String lockOwnerName) {
+        this.lockOwnerName = lockOwnerName;
+    }
+
+    public boolean isInNative() {
+        return inNative;
+    }
+
+    public void setInNative(boolean inNative) {
+        this.inNative = inNative;
+    }
+
+    public boolean isSuspended() {
+        return suspended;
+    }
+
+    public void setSuspended(boolean suspended) {
+        this.suspended = suspended;
+    }
+
+    public List<String> getStackTrace() {
+        return stackTrace;
+    }
+
+    public void setStackTrace(List<String> stackTrace) {
+        this.stackTrace = stackTrace;
+    }
 
     /**
      * 从 ThreadInfo 创建 DTO

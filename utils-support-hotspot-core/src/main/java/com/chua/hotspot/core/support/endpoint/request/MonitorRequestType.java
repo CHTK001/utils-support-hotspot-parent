@@ -1,8 +1,5 @@
 package com.chua.hotspot.core.support.endpoint.request;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-
 /**
  * 监视器请求类型
  *
@@ -10,8 +7,6 @@ import lombok.Getter;
  * @version 1.0.0
  * @since 2024/01/31
  */
-@AllArgsConstructor
-@Getter
 public enum MonitorRequestType {
 
     /**
@@ -27,4 +22,12 @@ public enum MonitorRequestType {
     ;
 
     private final String name;
+
+    MonitorRequestType(String name) {
+        this.name = name;
+    }
+
+    public String getName() {
+        return name;
+    }
 }

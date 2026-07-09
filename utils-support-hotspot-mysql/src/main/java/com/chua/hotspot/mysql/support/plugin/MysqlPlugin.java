@@ -8,6 +8,7 @@ import com.chua.hotspot.core.support.span.NewTrackManager;
 import com.chua.hotspot.core.support.span.Span;
 import com.chua.hotspot.core.support.sql.DmlFormatter;
 import com.chua.hotspot.core.support.utils.ClassUtils;
+import com.chua.hotspot.core.support.utils.FastMethodHelper;
 import com.chua.hotspot.core.support.utils.NetAddress;
 import net.bytebuddy.description.type.TypeDescription;
 import net.bytebuddy.dynamic.DynamicType;
@@ -48,6 +49,7 @@ public class MysqlPlugin extends BytebuddyPlugin {
             @Super Object delegate,
             @SuperCall(nullIfImpossible = true) Callable<?> callable) throws Exception {
         
+        BytebuddyPlugin.interceptEnter();
         long startTime = System.currentTimeMillis();
         String sql = null;
         String address = null;
@@ -66,10 +68,12 @@ public class MysqlPlugin extends BytebuddyPlugin {
             call = NewTrackManager.invoke(callable);
         } catch (Exception e) {
             error = e.getMessage();
+            BytebuddyPlugin.interceptError();
             throw e;
         } finally {
             long duration = System.currentTimeMillis() - startTime;
             NewTrackManager.costTime(span);
+            BytebuddyPlugin.interceptExit();
             
             // 推送 SQL 记录到 WebSocket
             if (sql != null && !sql.isEmpty()) {
@@ -169,15 +173,8 @@ public class MysqlPlugin extends BytebuddyPlugin {
      * @return 数据库
      */
     private static String getCurrentDb(Object cls) {
-        try {
-            Method method = cls.getClass().getMethod("getCurrentDatabase");
-            if (!method.isAccessible()) {
-                method.setAccessible(true);
-            }
-            return method.invoke(cls).toString();
-        } catch (Exception ignored) {
-        }
-        return "";
+        String result = FastMethodHelper.invokeString(cls, "getCurrentDatabase");
+        return result != null ? result : "";
     }
 
     /**
@@ -187,15 +184,8 @@ public class MysqlPlugin extends BytebuddyPlugin {
      * @return sql
      */
     public static String getSql(Object cls) {
-        try {
-            Method method = cls.getClass().getMethod("asSql");
-            if (!method.isAccessible()) {
-                method.setAccessible(true);
-            }
-            return method.invoke(cls).toString();
-        } catch (Exception ignored) {
-        }
-        return "";
+        String result = FastMethodHelper.invokeString(cls, "asSql");
+        return result != null ? result : "";
     }
 
     @Override

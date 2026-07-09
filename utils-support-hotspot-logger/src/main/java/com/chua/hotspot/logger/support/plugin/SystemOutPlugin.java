@@ -4,41 +4,80 @@ import com.chua.hotspot.core.support.report.ReportFactory;
 import com.chua.hotspot.core.support.enums.ModuleType;
 import com.chua.hotspot.core.support.plugin.BytebuddyPlugin;
 import com.chua.hotspot.core.support.pojo.LogEvent;
-import com.chua.hotspot.core.support.server.ServerFactory;
+import net.bytebuddy.description.method.MethodDescription;
 import net.bytebuddy.description.type.TypeDescription;
-import net.bytebuddy.dynamic.DynamicType;
-import net.bytebuddy.implementation.MethodDelegation;
-import net.bytebuddy.implementation.bind.annotation.*;
 import net.bytebuddy.matcher.ElementMatcher;
 import net.bytebuddy.matcher.ElementMatchers;
 
-import java.io.PrintStream;
-import java.lang.reflect.Method;
-import java.util.concurrent.Callable;
-
 /**
- * System.out/System.err 日志插件
- * 用于检测和追踪 System.out 和 System.err 的输出
+ * System.out/System.err 日志插件（Spy 模式）
+ * <p>
+ * 拦截方式：ByteBuddy Advice + Spy 桥接模式
+ * 拦截目标：java.io.PrintStream 的 write/print/println 方法
+ * </p>
+ *
+ * <h3>Spy 模式调用链路：</h3>
+ * <pre>
+ * PrintStream.write/print/println 方法执行
+ *     → Advice 内联代码调用 Spy.before/after
+ *     → SpyHandlerImpl 路由到 SystemOutPlugin.spyBefore/spyAfter
+ *     → captureOutput() 捕获输出并上报
+ * </pre>
  *
  * @author CH
  * @since 2024/12/11
- * @version 4.0.0.34
+ * @version 4.0.0.37
  */
 public class SystemOutPlugin extends BytebuddyPlugin {
 
     private static final String WEBSOCKET_EVENT = "AGENT_LOG";
     private static final int MAX_MESSAGE_LENGTH = 1024;
 
-    @RuntimeType
-    public static Object intercept(
-            @This Object target,
-            @Origin Method method,
-            @AllArguments Object[] objects,
-            @Super Object delegate,
-            @SuperCall(nullIfImpossible = true) Callable<?> callable) throws Exception {
-        
-        captureOutput(target, objects);
-        return callable.call();
+    @Override
+    public String name() {
+        return "SystemOut";
+    }
+
+    @Override
+    public ElementMatcher<? super TypeDescription> type() {
+        return ElementMatchers.named("java.io.PrintStream");
+    }
+
+    @Override
+    public ElementMatcher<? super MethodDescription> methodMatcher() {
+        return ElementMatchers.named("write")
+                .or(ElementMatchers.named("print"))
+                .or(ElementMatchers.named("println"));
+    }
+
+    /**
+     * Spy 前置回调 - 在 PrintStream 方法执行前调用
+     */
+    @Override
+    public void spyBefore(String className, String methodName, Object target, Object[] args) {
+        // 记录计时起点
+        super.spyBefore(className, methodName, target, args);
+    }
+
+    /**
+     * Spy 后置回调 - 在 PrintStream 方法正常返回后调用
+     */
+    @Override
+    public void spyAfter(String className, String methodName, Object target, Object[] args, Object result) {
+        try {
+            captureOutput(target, args);
+        } catch (Exception e) {
+            // 忽略捕获过程中的异常，避免影响应用
+        }
+        super.spyAfter(className, methodName, target, args, result);
+    }
+
+    /**
+     * Spy 异常回调 - 在 PrintStream 方法抛出异常后调用
+     */
+    @Override
+    public void spyError(String className, String methodName, Object target, Object[] args, Throwable throwable) {
+        super.spyError(className, methodName, target, args, throwable);
     }
 
     /**
@@ -70,9 +109,41 @@ public class SystemOutPlugin extends BytebuddyPlugin {
             LogEvent logEvent = new LogEvent();
             logEvent.setMessage(logMessage);
             
+            // 捕获调用栈，定位 System.out/err 的调用来源
+            fillCallerInfo(logEvent);
+            
             ReportFactory.report(ModuleType.LOG, WEBSOCKET_EVENT, logEvent);
         } catch (Exception e) {
             // 忽略捕获过程中的异常，避免影响应用
+        }
+    }
+
+    /**
+     * 从当前线程调用栈中提取 System.out/err 的调用者信息
+     * 跳过 PrintStream 自身的方法帧和本插件内部帧，定位实际调用 System.out/err 的业务代码
+     *
+     * @param logEvent 日志事件，填充 className 和 line 字段
+     */
+    private static void fillCallerInfo(LogEvent logEvent) {
+        StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
+        // 跳过: getStackTrace -> fillCallerInfo -> captureOutput -> Spy回调帧 -> PrintStream方法帧
+        // 找到第一个非 PrintStream、非 Spy、非本插件类的帧即为实际调用者
+        for (int i = 3; i < stackTrace.length; i++) {
+            StackTraceElement element = stackTrace[i];
+            String className = element.getClassName();
+            // 跳过 PrintStream 自身、Spy 桥接类、本插件内部类
+            if (className.startsWith("java.io.PrintStream")
+                    || className.startsWith("java.io.FilterOutputStream")
+                    || className.startsWith("java.io.OutputStream")
+                    || className.startsWith("com.chua.hotspot.spy.Spy")
+                    || className.startsWith("com.chua.hotspot.core.support.spy.SpyHandlerImpl")
+                    || className.startsWith("com.chua.hotspot.logger.support.plugin.SystemOutPlugin")) {
+                continue;
+            }
+            logEvent.setClassName(className);
+            logEvent.setLine(element.getLineNumber());
+            logEvent.setLogger(element.getMethodName());
+            return;
         }
     }
 
@@ -114,24 +185,5 @@ public class SystemOutPlugin extends BytebuddyPlugin {
         } catch (Exception e) {
             return false;
         }
-    }
-
-    @Override
-    public DynamicType.Builder.MethodDefinition.ReceiverTypeDefinition<?> transform(
-            DynamicType.Builder<?> builder) {
-        return builder.method(ElementMatchers.named("write")
-                        .or(ElementMatchers.named("print"))
-                        .or(ElementMatchers.named("println")))
-                .intercept(MethodDelegation.to(SystemOutPlugin.class));
-    }
-
-    @Override
-    public ElementMatcher<? super TypeDescription> type() {
-        return ElementMatchers.named("java.io.PrintStream");
-    }
-
-    @Override
-    public String name() {
-        return "SystemOut";
     }
 }

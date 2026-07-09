@@ -39,6 +39,8 @@ public class PluginRegistry {
         "com.chua.hotspot.undertow.support.PluginRegistration",
         "com.chua.hotspot.jetty.support.PluginRegistration",
         // HTTP 客户端相关
+        "com.chua.hotspot.httpclient3x.support.PluginRegistration",
+        "com.chua.hotspot.httpclient4x.support.PluginRegistration",
         "com.chua.hotspot.httpclient5x.support.PluginRegistration",
         // 消息队列相关
         "com.chua.hotspot.kafka.support.PluginRegistration",

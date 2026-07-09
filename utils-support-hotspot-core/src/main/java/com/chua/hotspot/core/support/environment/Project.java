@@ -1,8 +1,5 @@
 package com.chua.hotspot.core.support.environment;
 
-import lombok.Data;
-import lombok.NoArgsConstructor;
-
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -14,8 +11,6 @@ import java.util.Map;
  * @author CH
  * @since 2024/9/6
  */
-@Data
-@NoArgsConstructor
 public class Project {
     public static final String KEY = "oo00OOOO00ooll11";
 
@@ -97,11 +92,148 @@ public class Project {
      */
     private String clientProtocolEndpointProtocol;
 
+    public Project() {
+    }
 
     public static Project getInstance() {
         return INSTANCE;
     }
 
+    public String getReportAddress() {
+        return reportAddress;
+    }
+
+    public void setReportAddress(String reportAddress) {
+        this.reportAddress = reportAddress;
+    }
+
+    public List<String> getReportType() {
+        return reportType;
+    }
+
+    public void setReportType(List<String> reportType) {
+        this.reportType = reportType;
+    }
+
+    public String getApplicationName() {
+        return applicationName;
+    }
+
+    public void setApplicationName(String applicationName) {
+        this.applicationName = applicationName;
+    }
+
+    public Integer getApplicationPort() {
+        return applicationPort;
+    }
+
+    public void setApplicationPort(Integer applicationPort) {
+        this.applicationPort = applicationPort;
+    }
+
+    public String getApplicationHost() {
+        return applicationHost;
+    }
+
+    public void setApplicationHost(String applicationHost) {
+        this.applicationHost = applicationHost;
+    }
+
+    public String getApplicationActive() {
+        return applicationActive;
+    }
+
+    public void setApplicationActive(String applicationActive) {
+        this.applicationActive = applicationActive;
+    }
+
+    public String getApplicationActiveInclude() {
+        return applicationActiveInclude;
+    }
+
+    public void setApplicationActiveInclude(String applicationActiveInclude) {
+        this.applicationActiveInclude = applicationActiveInclude;
+    }
+
+    public String getContextPath() {
+        return contextPath;
+    }
+
+    public void setContextPath(String contextPath) {
+        this.contextPath = contextPath;
+    }
+
+    public String getEndpointsUrl() {
+        return endpointsUrl;
+    }
+
+    public void setEndpointsUrl(String endpointsUrl) {
+        this.endpointsUrl = endpointsUrl;
+    }
+
+    public String getEndpoints() {
+        return endpoints;
+    }
+
+    public void setEndpoints(String endpoints) {
+        this.endpoints = endpoints;
+    }
+
+    public String getDataSourceUrl() {
+        return dataSourceUrl;
+    }
+
+    public void setDataSourceUrl(String dataSourceUrl) {
+        this.dataSourceUrl = dataSourceUrl;
+    }
+
+    public String getDataSourceDriver() {
+        return dataSourceDriver;
+    }
+
+    public void setDataSourceDriver(String dataSourceDriver) {
+        this.dataSourceDriver = dataSourceDriver;
+    }
+
+    public String getDataSourceUsername() {
+        return dataSourceUsername;
+    }
+
+    public void setDataSourceUsername(String dataSourceUsername) {
+        this.dataSourceUsername = dataSourceUsername;
+    }
+
+    public String getDataSourcePassword() {
+        return dataSourcePassword;
+    }
+
+    public void setDataSourcePassword(String dataSourcePassword) {
+        this.dataSourcePassword = dataSourcePassword;
+    }
+
+    public Object getEnvironment() {
+        return environment;
+    }
+
+    public void setEnvironment(Object environment) {
+        this.environment = environment;
+    }
+
+    public String getClientProtocolEndpointPort() {
+        return clientProtocolEndpointPort;
+    }
+
+    public void setClientProtocolEndpointPort(String clientProtocolEndpointPort) {
+        this.clientProtocolEndpointPort = clientProtocolEndpointPort;
+    }
+
+    public String getClientProtocolEndpointProtocol() {
+        return clientProtocolEndpointProtocol;
+    }
+
+    public void setClientProtocolEndpointProtocol(String clientProtocolEndpointProtocol) {
+        this.clientProtocolEndpointProtocol = clientProtocolEndpointProtocol;
+    }
 
     public Map<String, String> getProject() {
         Map<String, String> map = new LinkedHashMap<>();

@@ -33,6 +33,7 @@ public class NacosNamingPlugin extends BytebuddyPlugin {
             @Super Object delegate,
             @SuperCall Callable<?> callable) throws Exception {
         
+        BytebuddyPlugin.interceptEnter();
         String serviceName = args.length > 0 ? String.valueOf(args[0]) : "unknown";
         
         // 创建链路追踪 Span
@@ -52,9 +53,11 @@ public class NacosNamingPlugin extends BytebuddyPlugin {
             return result;
         } catch (Exception e) {
             span.setError(e.getMessage());
+            BytebuddyPlugin.interceptError();
             throw e;
         } finally {
             NewTrackManager.costTime(span);
+            BytebuddyPlugin.interceptExit();
         }
     }
     

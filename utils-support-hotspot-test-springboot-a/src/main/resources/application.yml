@@ -1,0 +1,15 @@
+server:
+  port: 18081
+  error:
+    include-message: always
+    include-stacktrace: always
+    include-exception: true
+
+spring:
+  application:
+    name: hotspot-test-service-a
+
+logging:
+  level:
+    root: INFO
+    com.chua.hotspot: DEBUG

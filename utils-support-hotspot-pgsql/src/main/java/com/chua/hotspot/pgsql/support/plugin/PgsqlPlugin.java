@@ -16,6 +16,7 @@ import net.bytebuddy.implementation.bind.annotation.*;
 import net.bytebuddy.matcher.ElementMatcher;
 import net.bytebuddy.matcher.ElementMatchers;
 
+import com.chua.hotspot.core.support.utils.FastMethodHelper;
 import java.lang.reflect.Method;
 import java.util.LinkedList;
 import java.util.List;
@@ -42,6 +43,7 @@ public class PgsqlPlugin extends BytebuddyPlugin {
             @Super Object delegate,
             @SuperCall(nullIfImpossible = true) Callable<?> callable) throws Exception {
         
+        BytebuddyPlugin.interceptEnter();
         long startTime = System.currentTimeMillis();
         String sql = null;
         String address = null;
@@ -59,6 +61,7 @@ public class PgsqlPlugin extends BytebuddyPlugin {
             call = NewTrackManager.invoke(callable);
         } catch (Exception e) {
             error = e.getMessage();
+            BytebuddyPlugin.interceptError();
             throw e;
         } finally {
             long duration = System.currentTimeMillis() - startTime;
@@ -68,6 +71,7 @@ public class PgsqlPlugin extends BytebuddyPlugin {
                 String fullAddress = address != null ? address + "/" + database : database;
                 SqlMonitorApi.addSqlRecord(sql, duration, error, fullAddress, database);
             }
+            BytebuddyPlugin.interceptExit();
         }
         return call;
     }
@@ -156,12 +160,8 @@ public class PgsqlPlugin extends BytebuddyPlugin {
         try {
             Object connection = ClassUtils.getObject("connection", target);
             if (connection != null) {
-                Method method = connection.getClass().getMethod("getCatalog");
-                if (!method.isAccessible()) {
-                    method.setAccessible(true);
-                }
-                Object result = method.invoke(connection);
-                return result != null ? result.toString() : "";
+                String result = FastMethodHelper.invokeString(connection, "getCatalog");
+                return result != null ? result : "";
             }
         } catch (Exception ignored) {
         }
@@ -175,13 +175,9 @@ public class PgsqlPlugin extends BytebuddyPlugin {
                 Object cachedQuery = args[0];
                 Object query = ClassUtils.getObject("query", cachedQuery);
                 if (query != null) {
-                    Method method = query.getClass().getMethod("getNativeSql");
-                    if (!method.isAccessible()) {
-                        method.setAccessible(true);
-                    }
-                    Object result = method.invoke(query);
+                    String result = FastMethodHelper.invokeString(query, "getNativeSql");
                     if (result != null) {
-                        return result.toString();
+                        return result;
                     }
                 }
             }

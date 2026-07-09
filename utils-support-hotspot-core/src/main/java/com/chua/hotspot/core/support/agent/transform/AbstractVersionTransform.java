@@ -1,4 +1,4 @@
-package com.chua.hotspot.agent.support.transform;
+package com.chua.hotspot.core.support.agent.transform;
 
 import com.chua.hotspot.core.support.plugin.BytebuddyPlugin;
 import net.bytebuddy.dynamic.DynamicType;
@@ -15,7 +15,6 @@ public abstract class AbstractVersionTransform implements VersionTransform {
     public void setPlugin(BytebuddyPlugin bytebuddyPlugin) {
         this.plugin = bytebuddyPlugin;
     }
-
 
     public DynamicType.Builder<?> transformBuilder(DynamicType.Builder<?> builder) {
         return null == plugin ? null : plugin.transform(builder);

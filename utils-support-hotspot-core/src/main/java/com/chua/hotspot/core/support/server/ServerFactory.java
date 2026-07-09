@@ -1,13 +1,15 @@
 package com.chua.hotspot.core.support.server;
 
+import com.chua.hotspot.core.support.config.ConfigWatcher;
 import com.chua.hotspot.core.support.enums.ModuleType;
 import com.chua.hotspot.core.support.environment.EnvironmentFactory;
 import com.chua.hotspot.core.support.log.LogFactory;
+import com.chua.hotspot.core.support.monitor.AgentSelfMonitor;
 import com.chua.hotspot.core.support.perf.HttpPerformanceRecorder;
 import com.chua.hotspot.core.support.pusher.DataPusher;
 import com.chua.hotspot.core.support.server.api.ApiRegistry;
 import com.chua.hotspot.core.support.server.http.HttpServer;
-import com.chua.hotspot.core.support.server.ws.WebSocketServer;
+import com.chua.hotspot.core.support.server.ws.WebsocketServer;
 import com.chua.hotspot.core.support.storage.DataPersistenceScheduler;
 import com.chua.hotspot.core.support.storage.SqliteStorage;
 
@@ -38,7 +40,17 @@ public class ServerFactory {
     /**
      * WebSocket 服务器
      */
-    private WebSocketServer webSocketServer;
+    private WebsocketServer webSocketServer;
+
+    /**
+     * 配置文件监视器
+     */
+    private ConfigWatcher configWatcher;
+
+    /**
+     * Agent 自监控定时同步线程
+     */
+    private Thread monitorSyncThread;
 
     /**
      * 是否已初始化
@@ -98,9 +110,15 @@ public class ServerFactory {
         LogFactory.getInstance().info("HTTP 服务器启动成功: {}:{}", host, httpPort);
 
         // 创建并启动 WebSocket 服务器
-        webSocketServer = new WebSocketServer(wsPort);
+        webSocketServer = new WebsocketServer(wsPort);
         webSocketServer.start();
         LogFactory.getInstance().info("WebSocket 服务器启动成功: {}:{}", host, wsPort);
+
+        // 启动配置文件热更新监视器
+        startConfigWatcher();
+
+        // 启动 Agent 自监控定时同步
+        startMonitorSync();
 
         // 注册关闭钩子
         registerShutdownHook();
@@ -120,9 +138,63 @@ public class ServerFactory {
     }
 
     /**
+     * 启动配置文件热更新监视器
+     */
+    private void startConfigWatcher() {
+        try {
+            String configFile = environmentFactory.getString("hotspot.config.file", "");
+            if (!configFile.isEmpty()) {
+                configWatcher = new ConfigWatcher(configFile);
+                configWatcher.start();
+                LogFactory.getInstance().info("配置文件热更新监视器已启动: {}", configFile);
+            } else {
+                LogFactory.getInstance().debug("未配置热点配置文件路径，跳过配置热更新");
+            }
+        } catch (Exception e) {
+            LogFactory.getInstance().warn("配置文件热更新监视器启动失败: {}", e.getMessage());
+        }
+    }
+
+    /**
+     * 启动 Agent 自监控定时同步
+     * 每 30 秒将自监控统计同步到 MetricsExporter 供 Prometheus 导出
+     */
+    private void startMonitorSync() {
+        monitorSyncThread = new Thread(() -> {
+            LogFactory.getInstance().info("Agent 自监控定时同步线程已启动");
+            while (!Thread.currentThread().isInterrupted()) {
+                try {
+                    Thread.sleep(30_000); // 30 秒同步一次
+                    AgentSelfMonitor.getInstance().syncToMetricsExporter();
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    break;
+                } catch (Exception e) {
+                    LogFactory.getInstance().debug("Agent 自监控同步异常: {}", e.getMessage());
+                }
+            }
+            LogFactory.getInstance().info("Agent 自监控定时同步线程已停止");
+        }, "agent-monitor-sync");
+        monitorSyncThread.setDaemon(true);
+        monitorSyncThread.start();
+    }
+
+    /**
      * 停止服务器
      */
     public synchronized void stop() {
+        // 停止配置文件监视器
+        if (configWatcher != null) {
+            configWatcher.stop();
+            configWatcher = null;
+        }
+        
+        // 停止 Agent 自监控定时同步
+        if (monitorSyncThread != null) {
+            monitorSyncThread.interrupt();
+            monitorSyncThread = null;
+        }
+        
         // 停止统一数据推送器
         DataPusher.getInstance().stop();
         
@@ -161,7 +233,7 @@ public class ServerFactory {
      *
      * @return WebSocket 服务器
      */
-    public WebSocketServer getWebSocketServer() {
+    public WebsocketServer getWebSocketServer() {
         return webSocketServer;
     }
 

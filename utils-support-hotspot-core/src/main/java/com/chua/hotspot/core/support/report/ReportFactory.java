@@ -4,6 +4,7 @@ import com.chua.hotspot.core.support.enums.ModuleType;
 import com.chua.hotspot.core.support.environment.EnvironmentFactory;
 import com.chua.hotspot.core.support.environment.Project;
 import com.chua.hotspot.core.support.log.LogFactory;
+import com.chua.hotspot.core.support.monitor.AgentSelfMonitor;
 import com.chua.hotspot.core.support.server.ServerFactory;
 import com.chua.hotspot.core.support.server.ServiceInstance;
 import com.chua.hotspot.core.support.qps.ComponentConnectionRecorder;
@@ -108,6 +109,7 @@ public class ReportFactory {
 
     /**
      * SyncClient 类名（spring-support-report-client-starter）
+     * 保留用于反射降级方案
      */
     private static final String SYNC_CLIENT_CLASS = "com.chua.sync.support.client.SyncClient";
 
@@ -128,7 +130,7 @@ public class ReportFactory {
          */
         RSOCKET,
         /**
-         * 联动上报（使用 SyncClient）
+         * 联动上报（使用 SyncClientProvider SPI）
          */
         SYNC_CLIENT
     }
@@ -140,14 +142,9 @@ public class ReportFactory {
     private HttpReporter httpReporter;
     
     /**
-     * SyncClient 实例（通过反射获取）
+     * SyncClient SPI 提供者（优先使用 SPI，替代反射方式）
      */
-    private Object syncClient;
-    
-    /**
-     * SyncClient.publish 方法
-     */
-    private Method syncClientPublishMethod;
+    private SyncClientProvider syncClientProvider;
     
     /**
      * 是否使用联动上报
@@ -194,43 +191,82 @@ public class ReportFactory {
 
     /**
      * 初始化 SyncClient 联动上报
-     * 通过反射检测是否存在 spring-support-report-client-starter
+     * 优先使用 SPI (ServiceLoader) 发现 SyncClientProvider，避免运行时反射调用。
+     * 当 SPI 不可用时，降级使用反射方式（兼容旧版 spring-support-report-client-starter）。
      */
     private void initSyncClient() {
+        // 优先使用 SPI 发现 SyncClientProvider
         try {
-            // 尝试加载 SyncClient 类
-            Class<?> syncClientClass = Class.forName(SYNC_CLIENT_CLASS, false, 
+            java.util.ServiceLoader<SyncClientProvider> loader = java.util.ServiceLoader.load(SyncClientProvider.class);
+            Iterator<SyncClientProvider> iterator = loader.iterator();
+            if (iterator.hasNext()) {
+                syncClientProvider = iterator.next();
+                useSyncClient = true;
+                enabledProtocols.put(ReportProtocol.SYNC_CLIENT, true);
+                LogFactory.getInstance().info("通过 SPI 发现 SyncClientProvider: {}", syncClientProvider.name());
+                return;
+            }
+        } catch (Exception e) {
+            LogFactory.getInstance().debug("SPI 加载 SyncClientProvider 失败: {}", e.getMessage());
+        }
+        
+        // 降级方案：反射方式获取 SyncClient（兼容旧版）
+        initSyncClientByReflection();
+    }
+
+    /**
+     * 反射方式初始化 SyncClient（降级方案，兼容旧版 spring-support-report-client-starter）
+     * <p>
+     * 此方法仅在 SPI 未发现 SyncClientProvider 时使用。
+     * 新项目应实现 SyncClientProvider 接口并通过 SPI 注册，避免反射调用。
+     * </p>
+     */
+    private void initSyncClientByReflection() {
+        try {
+            Class<?> syncClientClass = Class.forName(SYNC_CLIENT_CLASS, false,
                     Thread.currentThread().getContextClassLoader());
-            
-            // 尝试从 Spring 容器获取 SyncClient 实例
             Object applicationContext = getSpringApplicationContext();
             if (applicationContext != null) {
                 Method getBeanMethod = applicationContext.getClass().getMethod("getBean", Class.class);
-                syncClient = getBeanMethod.invoke(applicationContext, syncClientClass);
-                
+                Object syncClient = getBeanMethod.invoke(applicationContext, syncClientClass);
                 if (syncClient != null) {
-                    // 获取 publish 方法
-                    syncClientPublishMethod = syncClientClass.getMethod("publish", String.class, Object.class);
+                    Method publishMethod = syncClientClass.getMethod("publish", String.class, Object.class);
+                    // 创建反射代理包装为 SyncClientProvider
+                    final Object clientRef = syncClient;
+                    final Method publishRef = publishMethod;
+                    syncClientProvider = new SyncClientProvider() {
+                        @Override
+                        public void publish(String topic, Object data) {
+                            try {
+                                publishRef.invoke(clientRef, topic, data);
+                            } catch (Exception e) {
+                                LogFactory.getInstance().debug("反射调用 SyncClient.publish 失败: {}", e.getMessage());
+                            }
+                        }
+                        @Override
+                        public String name() {
+                            return "ReflectionSyncClientProxy";
+                        }
+                    };
                     useSyncClient = true;
                     enabledProtocols.put(ReportProtocol.SYNC_CLIENT, true);
-                    LogFactory.getInstance().info("SyncClient 联动上报初始化成功");
+                    LogFactory.getInstance().info("通过反射降级方式初始化 SyncClient 成功");
                 }
             }
         } catch (ClassNotFoundException e) {
             LogFactory.getInstance().debug("未检测到 SyncClient 类，使用自主上报");
         } catch (Exception e) {
-            LogFactory.getInstance().debug("SyncClient 初始化失败: {}", e.getMessage());
+            LogFactory.getInstance().debug("SyncClient 反射降级初始化失败: {}", e.getMessage());
         }
     }
 
     /**
-     * 获取 Spring ApplicationContext
+     * 获取 Spring ApplicationContext（反射降级方案）
      *
      * @return ApplicationContext 实例，如果不存在返回 null
      */
     private Object getSpringApplicationContext() {
         try {
-            // 尝试从 SpringContextHolder 获取
             Class<?> holderClass = Class.forName("com.chua.starter.common.support.application.ApplicationContextHelper",
                     false, Thread.currentThread().getContextClassLoader());
             Method getContextMethod = holderClass.getMethod("getApplicationContext");
@@ -303,27 +339,40 @@ public class ReportFactory {
      * @param data       事件数据
      */
     private void doReport(ModuleType moduleType, String event, Object data) {
-        // 优先使用联动上报
-        if (useSyncClient && isProtocolEnabled(ReportProtocol.SYNC_CLIENT)) {
-            reportToSyncClient(moduleType, event, data);
-        } else if (isProtocolEnabled(ReportProtocol.HTTP)) {
-            // HTTP 上报
-            reportToHttp(moduleType, event, data);
+        long startTime = System.currentTimeMillis();
+        boolean success = false;
+        try {
+            // 优先使用联动上报
+            if (useSyncClient && isProtocolEnabled(ReportProtocol.SYNC_CLIENT)) {
+                reportToSyncClient(moduleType, event, data);
+            } else if (isProtocolEnabled(ReportProtocol.HTTP)) {
+                // HTTP 上报
+                reportToHttp(moduleType, event, data);
+            }
+            
+            // WebSocket 实时推送（无论使用何种上报协议，都推送到前端页面）
+            reportToWebSocket(moduleType, event, data);
+            success = true;
+        } finally {
+            long costMs = System.currentTimeMillis() - startTime;
+            if (success) {
+                AgentSelfMonitor.getInstance().recordReport(1, costMs);
+            } else {
+                AgentSelfMonitor.getInstance().recordReportFail();
+            }
         }
-        
-        // WebSocket 实时推送（无论使用何种上报协议，都推送到前端页面）
-        reportToWebSocket(moduleType, event, data);
     }
 
     /**
      * 上报数据到 SyncClient（联动上报）
+     * 通过 SyncClientProvider SPI 接口调用，避免运行时反射
      *
      * @param moduleType 模块类型
      * @param event 事件名称
      * @param data 事件数据
      */
     public void reportToSyncClient(ModuleType moduleType, String event, Object data) {
-        if (syncClient == null || syncClientPublishMethod == null) {
+        if (syncClientProvider == null) {
             return;
         }
 
@@ -334,8 +383,8 @@ public class ReportFactory {
             // 使用 ReportData 包装上报数据
             ReportData reportData = ReportData.of(moduleType, event, data);
 
-            // 调用 SyncClient.publish(topic, data)
-            syncClientPublishMethod.invoke(syncClient, topic, reportData);
+            // 通过 SPI 接口调用，无需反射
+            syncClientProvider.publish(topic, reportData);
         } catch (Exception e) {
             LogFactory.getInstance().debug("SyncClient 联动上报失败: {}", e.getMessage());
         }

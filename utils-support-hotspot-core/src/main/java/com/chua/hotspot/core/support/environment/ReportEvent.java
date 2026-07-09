@@ -1,8 +1,6 @@
 package com.chua.hotspot.core.support.environment;
 
 import com.chua.hotspot.core.support.enums.ModuleType;
-import lombok.Data;
-import lombok.Getter;
 
 /**
  * 上报数据
@@ -10,7 +8,6 @@ import lombok.Getter;
  * @author CH
  * @since 2024/9/12
  */
-@Data
 public class ReportEvent<T> {
     /**
      * 上报类型
@@ -47,8 +44,27 @@ public class ReportEvent<T> {
         setApplicationActive(Project.getInstance().getApplicationActive());
     }
 
+    public ModuleType getReportType() { return reportType; }
+    public void setReportType(ModuleType reportType) { this.reportType = reportType; }
 
-    @Getter
+    public String getApplicationName() { return applicationName; }
+    public void setApplicationName(String applicationName) { this.applicationName = applicationName; }
+
+    public Integer getApplicationPort() { return applicationPort; }
+    public void setApplicationPort(Integer applicationPort) { this.applicationPort = applicationPort; }
+
+    public String getApplicationHost() { return applicationHost; }
+    public void setApplicationHost(String applicationHost) { this.applicationHost = applicationHost; }
+
+    public String getApplicationActive() { return applicationActive; }
+    public void setApplicationActive(String applicationActive) { this.applicationActive = applicationActive; }
+
+    public long getTimestamp() { return timestamp; }
+    public void setTimestamp(long timestamp) { this.timestamp = timestamp; }
+
+    public T getReportData() { return reportData; }
+    public void setReportData(T reportData) { this.reportData = reportData; }
+
     public enum ReportType {
 
         /**

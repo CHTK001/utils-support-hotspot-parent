@@ -1,263 +1,292 @@
 package com.chua.hotspot.agent.support;
 
-import com.chua.hotspot.agent.support.agent.AgentFactory;
-import com.chua.hotspot.core.support.classloader.HotspotPluginClassLoader;
-import com.chua.hotspot.core.support.environment.EnvironmentFactory;
-import com.chua.hotspot.core.support.inst.InstrumentationFactory;
-import com.chua.hotspot.core.support.log.LogFactory;
-import com.chua.hotspot.core.support.plugin.PluginFactory;
-import com.chua.hotspot.core.support.server.ServerFactory;
-import org.hotswap.agent.HotswapAgent;
-
 import java.io.File;
+import java.io.FileOutputStream;
+import java.io.InputStream;
 import java.lang.instrument.Instrumentation;
 import java.lang.management.ManagementFactory;
 import java.lang.management.RuntimeMXBean;
-import java.util.HashMap;
+import java.net.URL;
+import java.net.URLClassLoader;
+import java.util.Enumeration;
 import java.util.List;
-import java.util.Map;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
 
 /**
- * Hotspot Agent 入口类
+ * Agent 薄壳入口 - 只做3件事
  * <p>
- * 集成 HotswapAgent 实现热重载功能。
+ * 1. 注入 spy.jar 到 Bootstrap ClassLoader
+ * 2. 创建 HotspotClassLoader 加载 core.jar + libs/ + plugins/
+ * 3. 反射调用 core 的 AgentBootstrap.main()
  * </p>
- * 
- * <h3>启动方式：</h3>
+ *
+ * <h3>架构设计：</h3>
  * <pre>
- * # Java 17/21 (JetBrains Runtime)
- * java -XX:+AllowEnhancedClassRedefinition \
- *      -javaagent:utils-support-hotspot-agent.jar \
- *      -jar app.jar
+ * Agent (薄壳, System CL)
+ *     │
+ *     ├─ 1. injectSpyToBootstrap()        ← 注入 Spy 到 Bootstrap CL
+ *     │
+ *     ├─ 2. new HotspotClassLoader()       ← 加载 core + libs + plugins
+ *     │
+ *     └─ 3. AgentBootstrap.main()          ← 反射调用, 在 HotspotClassLoader 中
+ *         │                                    所有核心逻辑都在 core 中执行
+ *         ├─ Spy.setHandler(spyHandler)
+ *         ├─ AgentFactory.init()
+ *         └─ ServerFactory.init()
  * </pre>
- * 
+ *
+ * <h3>为什么 agent 必须是薄壳：</h3>
+ * <ul>
+ *   <li>agent JAR 由 System CL 加载，直接依赖 core 会导致类冲突</li>
+ *   <li>Netty/Spring/Tomcat 等框架类在应用 CL 中，agent CL 无法向下可见</li>
+ *   <li>通过 HotspotClassLoader 隔离，core 和插件可以独立加载和版本选择</li>
+ *   <li>agent 只需要 spy.jar (provided) 和 JDK 核心类</li>
+ * </ul>
+ *
  * @author CH
- * @since 2024/12/10
- * @version 4.0.0.35
+ * @since 4.0.0.37
  */
 public class Agent {
 
+    /** Agent 是否已初始化（幂等保护） */
+    private static volatile boolean initialized = false;
+
+    /** 是否为 attach 模式 */
+    private static volatile boolean attachMode = false;
+
+    /** AgentBootstrap 入口类全限定名 */
+    private static final String BOOTSTRAP_CLASS = "com.chua.hotspot.core.support.agent.AgentBootstrap";
+
+    /** core JAR 文件名关键字 */
+    private static final String CORE_JAR_KEYWORD = "hotspot-core";
+
+    /** Agent JAR 文件名关键字 */
+    private static final String HOTSPOT_AGENT_KEYWORD = "hotspot-agent";
+
+    /**
+     * premain 入口（-javaagent 方式加载）
+     */
     public static void premain(String args, Instrumentation instrumentation) {
+        initialize(args, instrumentation, false);
+    }
+
+    /**
+     * agentmain 入口（运行时 attach 方式加载）
+     */
+    public static void agentmain(String args, Instrumentation instrumentation) {
+        initialize(args, instrumentation, true);
+    }
+
+    /**
+     * 统一初始化入口
+     */
+    private static synchronized void initialize(String args, Instrumentation instrumentation, boolean isAttachMode) {
+        if (initialized) {
+            System.out.println("[WARN] Hotspot Agent 已初始化，跳过重复初始化");
+            return;
+        }
+
+        attachMode = isAttachMode;
+        String modeLabel = isAttachMode ? "attach" : "premain";
+        System.out.println("[INFO] Hotspot Agent 启动模式: " + modeLabel);
+
         try {
-            // 1. 初始化自定义 ClassLoader（检测应用版本并选择性加载 JAR）
-            initializeClassLoader();
-            
-            // 2. 初始化 HotswapAgent（需要 JetBrains Runtime 或 DCEVM）
-            initHotswapAgent(args, instrumentation);
-            
-            // 3. 初始化各个工厂
-            InstrumentationFactory.getInstance().init(instrumentation);
-            EnvironmentFactory.getInstance().init(args);
-            LogFactory.getInstance().init();
-            PluginFactory.getInstance().init();
-            // ReportFactory 延迟初始化，等待 Spring 启动后由插件触发
-            AgentFactory.getInstance().init();
-            // API 服务接口
-            ServerFactory.getInstance().init();
-            
-            LogFactory.getInstance().info("Hotspot Agent 启动成功");
+            // ========== 第1步：注入 Spy 到 Bootstrap ClassLoader ==========
+            injectSpyToBootstrap(instrumentation, isAttachMode);
+
+            // ========== 第2步：创建 HotspotClassLoader ==========
+            HotspotClassLoader classLoader = createClassLoader(isAttachMode);
+            if (classLoader == null) {
+                System.err.println("[ERROR] 无法创建 HotspotClassLoader，Agent 启动失败");
+                if (!isAttachMode) {
+                    throw new RuntimeException("无法创建 HotspotClassLoader");
+                }
+                return;
+            }
+
+            // ========== 第3步：反射调用 AgentBootstrap.main() ==========
+            invokeBootstrap(args, instrumentation, isAttachMode, classLoader);
+
+            initialized = true;
+            System.out.println("[INFO] Hotspot Agent 薄壳启动完成（" + modeLabel + "模式）");
         } catch (Exception e) {
-            LogFactory.getInstance().error("Hotspot Agent 启动失败: {}", e.getMessage(), e);
-            throw new RuntimeException("Agent 启动失败", e);
+            System.err.println("[ERROR] Hotspot Agent 启动失败: " + e.getMessage());
+            e.printStackTrace();
+            if (!isAttachMode) {
+                throw new RuntimeException("Agent 启动失败", e);
+            }
         }
     }
-    
+
     /**
-     * 初始化 HotswapAgent
-     * <p>
-     * 尝试初始化 HotswapAgent，如果 JVM 不支持则跳过。
-     * 需要 JetBrains Runtime 或 DCEVM 才能正常工作。
-     * </p>
-     *
-     * @param args            启动参数
-     * @param instrumentation Instrumentation 实例
+     * 注入 Spy 桥接类到 Bootstrap ClassLoader
      */
-    private static void initHotswapAgent(String args, Instrumentation instrumentation) {
+    private static void injectSpyToBootstrap(Instrumentation instrumentation, boolean isAttachMode) {
         try {
-            // 调用 HotswapAgent 的 premain 方法
-            HotswapAgent.premain(args, instrumentation);
-            LogFactory.getInstance().info("HotswapAgent 初始化成功，热重载功能已启用");
-        } catch (Throwable e) {
-            // HotswapAgent 初始化失败不影响主流程
-            LogFactory.getInstance().warn("HotswapAgent 初始化失败（可能 JVM 不支持）: {}", e.getMessage());
-        }
-    }
-    
-    /**
-     * 初始化自定义 ClassLoader
-     * 流程：先检测应用版本 -> 根据版本选择性加载 JAR -> 初始化 ClassLoader
-     */
-    private static void initializeClassLoader() {
-        try {
-            // 1. 获取 Agent JAR 文件路径
-            String agentJarPath = getAgentJarPathSimple();
-            System.out.println("[INFO] Agent JAR 路径: " + agentJarPath);
-            
-            // 2. 获取 lib 目录路径
-            String libPath = HotspotPluginClassLoader.getLibPath(agentJarPath);
-            System.out.println("[INFO] lib 目录路径: " + libPath);
-            
-            // 3. 检测目标应用使用的框架版本（通过应用 classpath）
-            System.out.println("[INFO] 检测目标应用框架版本...");
-            Map<String, String> detectedVersions = detectApplicationVersions();
-            
-            // 4. 根据检测到的版本选择性初始化 ClassLoader
-            System.out.println("[INFO] 根据应用版本选择性加载 JAR 文件...");
-            HotspotPluginClassLoader classLoader =
-                    HotspotPluginClassLoader.initializeWithVersionSelection(libPath, detectedVersions);
-            
-            // 5. 设置线程上下文 ClassLoader
-            Thread.currentThread().setContextClassLoader(classLoader);
-            System.out.println("[INFO] 自定义 ClassLoader 初始化完成");
-        } catch (Exception e) {
-            System.err.println("[WARN] 初始化 ClassLoader 失败，将使用默认 ClassLoader: " + e.getMessage());
-            // 不抛出异常，允许降级使用默认 ClassLoader
-        }
-    }
-    
-    /**
-     * 检测目标应用使用的框架版本
-     * 通过应用的 classpath 来判断，而非 Agent 的 libs 目录
-     *
-     * @return 框架名称 -> 主版本号映射
-     */
-    private static Map<String, String> detectApplicationVersions() {
-        Map<String, String> versions = new HashMap<>();
-        
-        // 获取应用 classpath
-        String classpath = System.getProperty("java.class.path", "");
-        String[] paths = classpath.split(File.pathSeparator);
-        
-        for (String path : paths) {
-            String lowerPath = path.toLowerCase();
-            
-            // =============== 检测 Undertow（优先检测，因为 Undertow 和 Tomcat 互斥） ===============
-            if (lowerPath.contains("undertow-core")) {
-                versions.put("undertow", "2");
-                System.out.println("[INFO] 检测到应用使用 Undertow");
-                // 如果使用 Undertow，明确标记不使用 Tomcat 和 Jetty
-                versions.put("tomcat", "0");
-                versions.put("jetty", "0");
+            // 1. 定位 spy.jar
+            File spyJar = locateSpyJar();
+            if (spyJar == null || !spyJar.exists()) {
+                System.err.println("[WARN] 未找到 spy.jar，Spy 桥接模式可能无法正常工作");
+                return;
             }
-            
-            // =============== 检测 Jetty（与 Tomcat 互斥） ===============
-            if (lowerPath.contains("jetty-server")) {
-                // Jetty 9.x 使用 javax.servlet, Jetty 10+/11+ 使用 jakarta.servlet
-                if (lowerPath.contains("11.") || lowerPath.contains("-11.") ||
-                    lowerPath.contains("12.") || lowerPath.contains("-12.")) {
-                    versions.put("jetty", "11");
-                    System.out.println("[INFO] 检测到应用使用 Jetty 11.x/12.x");
-                } else if (lowerPath.contains("10.") || lowerPath.contains("-10.")) {
-                    versions.put("jetty", "10");
-                    System.out.println("[INFO] 检测到应用使用 Jetty 10.x");
-                } else if (lowerPath.contains("9.") || lowerPath.contains("-9.")) {
-                    versions.put("jetty", "9");
-                    System.out.println("[INFO] 检测到应用使用 Jetty 9.x");
-                } else {
-                    versions.put("jetty", "11"); // 默认新版本
-                    System.out.println("[INFO] 检测到应用使用 Jetty");
-                }
-                // 如果使用 Jetty，明确标记不使用 Tomcat
-                versions.put("tomcat", "0");
-            }
-            
-            // =============== 检测 Tomcat 版本 ===============
-            if (lowerPath.contains("tomcat-embed-core")) {
-                if (lowerPath.contains("10.") || lowerPath.contains("-10.")) {
-                    versions.put("tomcat", "10");
-                    System.out.println("[INFO] 检测到应用使用 Tomcat 10.x");
-                } else if (lowerPath.contains("9.") || lowerPath.contains("-9.")) {
-                    versions.put("tomcat", "9");
-                    System.out.println("[INFO] 检测到应用使用 Tomcat 9.x");
-                }
-            }
-            
-            // =============== 检测 Spring 版本 ===============
-            if (lowerPath.contains("spring-core") || lowerPath.contains("spring-context")) {
-                if (lowerPath.contains("6.") || lowerPath.contains("-6.")) {
-                    versions.put("spring", "6");
-                    System.out.println("[INFO] 检测到应用使用 Spring 6.x");
-                } else if (lowerPath.contains("5.") || lowerPath.contains("-5.")) {
-                    versions.put("spring", "5");
-                    System.out.println("[INFO] 检测到应用使用 Spring 5.x");
-                }
-            }
-            
-            // =============== 检测 Dubbo 版本 ===============
-            if (lowerPath.contains("dubbo")) {
-                if (lowerPath.contains("3.") || lowerPath.contains("-3.")) {
-                    versions.put("dubbo", "3");
-                    System.out.println("[INFO] 检测到应用使用 Dubbo 3.x");
-                } else if (lowerPath.contains("2.") || lowerPath.contains("-2.")) {
-                    versions.put("dubbo", "2");
-                    System.out.println("[INFO] 检测到应用使用 Dubbo 2.x");
-                }
-            }
-            
-            // =============== 检测 Netty 版本 ===============
-            if (lowerPath.contains("netty-common") || lowerPath.contains("netty-all")) {
-                versions.put("netty", "4");
-                System.out.println("[INFO] 检测到应用使用 Netty");
-            }
-        }
-        
-        // =============== 通过类存在性补充检测 ===============
-        // 注意：只有在 classpath 检测不到时才进行
-        if (!versions.containsKey("tomcat") && !versions.containsKey("undertow") && !versions.containsKey("jetty")) {
-            // 先检测 Undertow
+
+            // 2. 追加到 Bootstrap ClassLoader 搜索路径
+            instrumentation.appendToBootstrapClassLoaderSearch(new java.util.jar.JarFile(spyJar));
+            System.out.println("[INFO] Spy 桥接类已注入 Bootstrap ClassLoader: " + spyJar.getAbsolutePath());
+
+            // 3. 验证
             try {
-                Class.forName("io.undertow.Undertow", false, ClassLoader.getSystemClassLoader());
-                versions.put("undertow", "2");
-                versions.put("tomcat", "0");
-                versions.put("jetty", "0");
-                System.out.println("[INFO] 通过类检测到应用使用 Undertow");
-            } catch (ClassNotFoundException ignored) {
-                // 检测 Jetty
-                try {
-                    Class.forName("org.eclipse.jetty.server.Server", false, ClassLoader.getSystemClassLoader());
-                    versions.put("jetty", "11");
-                    versions.put("tomcat", "0");
-                    System.out.println("[INFO] 通过类检测到应用使用 Jetty");
-                } catch (ClassNotFoundException ignored2) {
-                    // 检测 Tomcat
-                    try {
-                        Class.forName("org.apache.catalina.startup.Tomcat", false, ClassLoader.getSystemClassLoader());
-                        try {
-                            Class.forName("jakarta.servlet.Servlet", false, ClassLoader.getSystemClassLoader());
-                            versions.put("tomcat", "10");
-                            System.out.println("[INFO] 通过类检测到 Tomcat 10.x");
-                        } catch (ClassNotFoundException e2) {
-                            versions.put("tomcat", "9");
-                            System.out.println("[INFO] 通过类检测到 Tomcat 9.x");
-                        }
-                    } catch (ClassNotFoundException e) {
-                        System.out.println("[INFO] 应用未使用 Tomcat/Jetty/Undertow");
+                Class<?> spyClass = Class.forName("com.chua.hotspot.spy.Spy", false, null);
+                System.out.println("[INFO] Spy 类验证成功，ClassLoader: " + spyClass.getClassLoader());
+            } catch (ClassNotFoundException e) {
+                System.err.println("[ERROR] Spy 类注入后仍无法从 Bootstrap CL 加载: " + e.getMessage());
+            }
+        } catch (Exception e) {
+            System.err.println("[ERROR] 注入 Spy 到 Bootstrap CL 失败: " + e.getMessage());
+            if (!isAttachMode) {
+                throw new RuntimeException("Spy 注入失败", e);
+            }
+        }
+    }
+
+    /**
+     * 创建 HotspotClassLoader
+     */
+    private static HotspotClassLoader createClassLoader(boolean isAttachMode) {
+        try {
+            String agentJarPath = getAgentJarPath();
+            System.out.println("[INFO] Agent JAR 路径: " + agentJarPath);
+
+            return new HotspotClassLoader(agentJarPath, Agent.class.getClassLoader());
+        } catch (Exception e) {
+            System.err.println("[ERROR] 创建 HotspotClassLoader 失败: " + e.getMessage());
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    /**
+     * 反射调用 AgentBootstrap.main()
+     */
+    private static void invokeBootstrap(String args, Instrumentation instrumentation, boolean isAttachMode,
+                                         HotspotClassLoader classLoader) {
+        try {
+            Class<?> bootstrapClass = classLoader.loadClass(BOOTSTRAP_CLASS);
+            java.lang.reflect.Method mainMethod = bootstrapClass.getMethod(
+                    "main", String.class, Instrumentation.class, boolean.class);
+            mainMethod.invoke(null, args, instrumentation, isAttachMode);
+        } catch (Exception e) {
+            System.err.println("[ERROR] 调用 AgentBootstrap.main() 失败: " + e.getMessage());
+            e.printStackTrace();
+            throw new RuntimeException("AgentBootstrap 调用失败", e);
+        }
+    }
+
+    /**
+     * 定位 spy.jar 文件
+     */
+    private static File locateSpyJar() {
+        try {
+            String agentJarPath = getAgentJarPath();
+            if (agentJarPath != null) {
+                File agentJar = new File(agentJarPath);
+                File agentDir = agentJar.getParentFile();
+
+                // 1. Agent JAR 同级目录
+                if (agentDir != null) {
+                    File spyJar = new File(agentDir, "spy.jar");
+                    if (spyJar.exists()) {
+                        return spyJar;
                     }
                 }
+
+                // 2. libs 目录
+                if (agentDir != null) {
+                    File libsDir = new File(agentDir, "libs");
+                    if (libsDir.exists()) {
+                        File spyJar = new File(libsDir, "spy.jar");
+                        if (spyJar.exists()) {
+                            return spyJar;
+                        }
+                    }
+                    // 父级目录
+                    File parentDir = agentDir.getParentFile();
+                    if (parentDir != null) {
+                        File spyJar = new File(parentDir, "spy.jar");
+                        if (spyJar.exists()) {
+                            return spyJar;
+                        }
+                        File parentLibs = new File(parentDir, "libs");
+                        if (parentLibs.exists()) {
+                            spyJar = new File(parentLibs, "spy.jar");
+                            if (spyJar.exists()) {
+                                return spyJar;
+                            }
+                        }
+                    }
+                }
+
+                // 3. 从 Agent JAR 内部提取
+                File extractedSpyJar = extractSpyJarFromAgentJar(agentJar);
+                if (extractedSpyJar != null) {
+                    return extractedSpyJar;
+                }
             }
+
+            // 4. 从系统属性查找
+            String spyJarPath = System.getProperty("hotspot.spy.jar.path");
+            if (spyJarPath != null && !spyJarPath.isEmpty()) {
+                File spyJar = new File(spyJarPath);
+                if (spyJar.exists()) {
+                    return spyJar;
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("[WARN] 定位 spy.jar 失败: " + e.getMessage());
         }
-        
-        // 打印检测结果汇总
-        System.out.println("[INFO] 框架版本检测结果: " + versions);
-        
-        return versions;
+        return null;
     }
-    
+
     /**
-     * Hotspot Agent JAR 文件名关键字
+     * 从 Agent JAR 中提取 spy.jar
      */
-    private static final String HOTSPOT_AGENT_KEYWORD = "hotspot-agent";
-    
+    private static File extractSpyJarFromAgentJar(File agentJar) {
+        try (ZipFile zipFile = new ZipFile(agentJar)) {
+            String[] possiblePaths = {"spy.jar", "BOOT-INF/lib/spy.jar", "lib/spy.jar"};
+            for (String path : possiblePaths) {
+                ZipEntry entry = zipFile.getEntry(path);
+                if (entry != null) {
+                    File tempDir = new File(System.getProperty("java.io.tmpdir"), "hotspot-spy");
+                    if (!tempDir.exists()) {
+                        tempDir.mkdirs();
+                    }
+                    File spyJar = new File(tempDir, "spy.jar");
+                    try (InputStream is = zipFile.getInputStream(entry);
+                         FileOutputStream fos = new FileOutputStream(spyJar)) {
+                        byte[] buffer = new byte[4096];
+                        int bytesRead;
+                        while ((bytesRead = is.read(buffer)) != -1) {
+                            fos.write(buffer, 0, bytesRead);
+                        }
+                    }
+                    System.out.println("[INFO] 从 Agent JAR 提取 spy.jar 到: " + spyJar.getAbsolutePath());
+                    return spyJar;
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("[WARN] 从 Agent JAR 提取 spy.jar 失败: " + e.getMessage());
+        }
+        return null;
+    }
+
     /**
-     * 简单获取 Agent JAR 路径（不使用 LogFactory，因为此时可能还未初始化）
-     *
-     * @return Agent JAR 文件路径
+     * 获取 Agent JAR 路径
      */
-    private static String getAgentJarPathSimple() {
+    private static String getAgentJarPath() {
         try {
             RuntimeMXBean runtimeMxBean = ManagementFactory.getRuntimeMXBean();
             List<String> inputArguments = runtimeMxBean.getInputArguments();
-            
             for (String arg : inputArguments) {
                 if (arg.startsWith("-javaagent:")) {
                     String agentPath = arg.substring("-javaagent:".length());
@@ -265,7 +294,6 @@ public class Agent {
                     if (equalsIndex > 0) {
                         agentPath = agentPath.substring(0, equalsIndex);
                     }
-                    
                     File agentFile = new File(agentPath);
                     if (agentFile.exists() && agentFile.getName().contains(HOTSPOT_AGENT_KEYWORD)) {
                         return agentFile.getAbsolutePath();
@@ -277,43 +305,18 @@ public class Agent {
         }
         return null;
     }
-    
+
     /**
-     * 获取 Agent JAR 文件路径
-     * <p>
-     * 从 JVM 启动参数中获取 -javaagent 指定的路径，
-     * 支持多个 agent 场景，通过文件名匹配 hotspot-agent
-     * </p>
-     * 
-     * @return Agent JAR 文件路径
+     * 查询 Agent 是否已初始化
      */
-    private static String getAgentJarPath() {
-        try {
-            RuntimeMXBean runtimeMxBean = ManagementFactory.getRuntimeMXBean();
-            List<String> inputArguments = runtimeMxBean.getInputArguments();
-            
-            for (String arg : inputArguments) {
-                // 匹配 -javaagent:/path/to/agent.jar 或 -javaagent:/path/to/agent.jar=options
-                if (arg.startsWith("-javaagent:")) {
-                    String agentPath = arg.substring("-javaagent:".length());
-                    // 处理可能存在的参数（如 -javaagent:xxx.jar=options）
-                    int equalsIndex = agentPath.indexOf('=');
-                    if (equalsIndex > 0) {
-                        agentPath = agentPath.substring(0, equalsIndex);
-                    }
-                    
-                    File agentFile = new File(agentPath);
-                    // 检查文件名是否包含 hotspot-agent 关键字
-                    if (agentFile.exists() && agentFile.getName().contains(HOTSPOT_AGENT_KEYWORD)) {
-                        LogFactory.getInstance().debug("从 JVM 参数获取到 Hotspot Agent 路径: {}", agentFile.getAbsolutePath());
-                        return agentFile.getAbsolutePath();
-                    }
-                }
-            }
-            LogFactory.getInstance().warn("未找到包含 '{}' 的 -javaagent 启动参数", HOTSPOT_AGENT_KEYWORD);
-        } catch (Exception e) {
-            LogFactory.getInstance().warn("获取 Agent JAR 路径失败: {}", e.getMessage());
-        }
-        return null;
+    public static boolean isInitialized() {
+        return initialized;
+    }
+
+    /**
+     * 查询是否为 attach 模式
+     */
+    public static boolean isAttachMode() {
+        return attachMode;
     }
 }

@@ -42,11 +42,16 @@ public class OkHttp3xPlugin extends BytebuddyPlugin {
             @Super Object delegate,
             // 方法的调用者对象 对原始方法的调用依靠它
             @SuperCall Callable<?> callable) throws Exception {
+        BytebuddyPlugin.interceptEnter();
         Span span = NewTrackManager.createRefreshSpan(target, method, objects);
         try {
             return callable.call();
+        } catch (Exception e) {
+            BytebuddyPlugin.interceptError();
+            throw e;
         } finally {
             NewTrackManager.costTime(span);
+            BytebuddyPlugin.interceptExit();
         }
     }
 

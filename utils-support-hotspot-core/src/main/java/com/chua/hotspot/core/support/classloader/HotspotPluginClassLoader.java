@@ -100,12 +100,16 @@ public class HotspotPluginClassLoader extends URLClassLoader {
      * @return 是否为插件类
      */
     private boolean isHotspotPluginClass(String className) {
-        // core 模块必须由父类加载器加载
+        // core 模块必须由父类加载器加载（HotspotClassLoader）
         if (className.startsWith("com.chua.hotspot.core.")) {
             return false;
         }
-        // agent 模块必须由父类加载器加载
+        // agent 模块必须由父类加载器加载（System CL）
         if (className.startsWith("com.chua.hotspot.agent.")) {
+            return false;
+        }
+        // spy 桥接类必须由 Bootstrap CL 加载
+        if (className.startsWith("com.chua.hotspot.spy.")) {
             return false;
         }
         // 其他 hotspot 插件模块使用子类优先
@@ -155,12 +159,24 @@ public class HotspotPluginClassLoader extends URLClassLoader {
                 System.out.println("[WARN] lib 目录下未找到任何 JAR 文件: " + libPath);
             }
 
+            // 使用加载本类的 ClassLoader 作为父类加载器（即 HotspotClassLoader）
+            // 这样插件类可以访问 core 模块的类（如 BytebuddyPlugin）
+            // HotspotPluginClassLoader 由 HotspotClassLoader 加载，所以 getClassLoader() 返回 HotspotClassLoader
+            ClassLoader parentClassLoader = HotspotPluginClassLoader.class.getClassLoader();
+            if (parentClassLoader == null) {
+                // 如果由 Bootstrap CL 加载（不应该发生），回退到线程上下文 CL
+                parentClassLoader = Thread.currentThread().getContextClassLoader();
+            }
+            if (parentClassLoader == null) {
+                parentClassLoader = ClassLoader.getSystemClassLoader();
+            }
+
             instance = new HotspotPluginClassLoader(
                 urls.toArray(new URL[0]),
-                ClassLoader.getSystemClassLoader()
+                parentClassLoader
             );
 
-            System.out.println("[INFO] ClassLoader 初始化成功，加载了 " + urls.size() + " 个 JAR 文件");
+            System.out.println("[INFO] ClassLoader 初始化成功，加载了 " + urls.size() + " 个 JAR 文件，parent: " + parentClassLoader.getClass().getName());
             return instance;
         } catch (Exception e) {
             throw new RuntimeException("初始化 HotspotPluginClassLoader 失败: " + e.getMessage(), e);
@@ -226,9 +242,21 @@ public class HotspotPluginClassLoader extends URLClassLoader {
                 System.out.println("[WARN] 未找到任何 JAR 文件");
             }
 
+            // 使用加载本类的 ClassLoader 作为父类加载器（即 HotspotClassLoader）
+            // 这样插件类可以访问 core 模块的类（如 BytebuddyPlugin）
+            // HotspotPluginClassLoader 由 HotspotClassLoader 加载，所以 getClassLoader() 返回 HotspotClassLoader
+            ClassLoader parentClassLoader = HotspotPluginClassLoader.class.getClassLoader();
+            if (parentClassLoader == null) {
+                // 如果由 Bootstrap CL 加载（不应该发生），回退到线程上下文 CL
+                parentClassLoader = Thread.currentThread().getContextClassLoader();
+            }
+            if (parentClassLoader == null) {
+                parentClassLoader = ClassLoader.getSystemClassLoader();
+            }
+
             instance = new HotspotPluginClassLoader(
                 urls.toArray(new URL[0]),
-                ClassLoader.getSystemClassLoader()
+                parentClassLoader
             );
 
             return instance;

@@ -17,6 +17,9 @@ public class InstrumentationFactory {
     private final Map<String, Class<?>> cache = new ConcurrentHashMap<>();
     public Instrumentation instrumentation;
 
+    /** 是否已初始化（幂等保护） */
+    private volatile boolean initialized = false;
+
     private InstrumentationFactory() {
     }
 
@@ -27,6 +30,26 @@ public class InstrumentationFactory {
      */
     public static InstrumentationFactory getInstance() {
         return INSTANCE;
+    }
+
+    /**
+     * 初始化
+     *
+     * @param instrumentation Instrumentation 实例
+     */
+    public void init(Instrumentation instrumentation) {
+        if (initialized) {
+            return;
+        }
+        this.instrumentation = instrumentation;
+        initialized = true;
+    }
+
+    /**
+     * 查询是否已初始化
+     */
+    public boolean isInitialized() {
+        return initialized;
     }
 
     /**
@@ -59,10 +82,6 @@ public class InstrumentationFactory {
         }
 
         return null;
-    }
-
-    public void init(Instrumentation instrumentation) {
-        this.instrumentation = instrumentation;
     }
 
     /**

@@ -34,6 +34,7 @@ public class MybatisSqlMonitorPlugin extends BytebuddyPlugin {
             @Super Object delegate,
             @SuperCall Callable<?> callable) throws Exception {
         
+        BytebuddyPlugin.interceptEnter();
         long startTime = System.currentTimeMillis();
         String sql = null;
         String error = null;
@@ -62,6 +63,7 @@ public class MybatisSqlMonitorPlugin extends BytebuddyPlugin {
             
         } catch (Exception e) {
             error = e.getMessage();
+            BytebuddyPlugin.interceptError();
             throw e;
         } finally {
             // 记录 SQL
@@ -69,6 +71,7 @@ public class MybatisSqlMonitorPlugin extends BytebuddyPlugin {
                 long duration = System.currentTimeMillis() - startTime;
                 SqlMonitorApi.addSqlRecord(sql, duration, error);
             }
+            BytebuddyPlugin.interceptExit();
         }
     }
     

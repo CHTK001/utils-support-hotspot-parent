@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    Spy 桥接模块 - 注入 Bootstrap ClassLoader 的最小桥接层
+    
+    该模块只包含 Spy 和 SpyHandler 两个类，零依赖。
+    打包为独立 JAR (spy.jar)，在 Agent 启动时通过
+    Instrumentation.appendToBootstrapClassLoaderSearch() 注入 Bootstrap CL。
+    
+    所有被 ByteBuddy 增强的目标类字节码只引用此类，
+    通过 Spy 静态方法回调路由到 agent core 中的实际插件逻辑。
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>com.chua</groupId>
+        <artifactId>utils-support-hotspot-parent</artifactId>
+        <version>4.0.0.33</version>
+    </parent>
+
+    <artifactId>utils-support-hotspot-spy</artifactId>
+    <packaging>jar</packaging>
+    <description>Spy bridge module for Bootstrap ClassLoader injection</description>
+
+    <!-- 零依赖：此模块不能依赖任何第三方库 -->
+    <dependencies>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>3.3.0</version>
+                <configuration>
+                    <archive>
+                        <manifestEntries>
+                            <!-- 标记为 Spy 模块，便于运行时识别 -->
+                            <Hotspot-Spy-Module>true</Hotspot-Spy-Module>
+                        </manifestEntries>
+                    </archive>
+                    <finalName>spy</finalName>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+</project>

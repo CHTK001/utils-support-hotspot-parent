@@ -4,7 +4,7 @@ import com.chua.hotspot.core.support.enums.ModuleType;
 import com.chua.hotspot.core.support.server.ServerFactory;
 import com.chua.hotspot.core.support.server.api.ApiEndpoint;
 import com.chua.hotspot.core.support.server.http.HttpRequest;
-import com.chua.hotspot.core.support.server.ws.WebSocketServer;
+import com.chua.hotspot.core.support.server.ws.WebsocketServer;
 import jdk.jfr.FlightRecorder;
 import jdk.jfr.Recording;
 import jdk.jfr.RecordingState;

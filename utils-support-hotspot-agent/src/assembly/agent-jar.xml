@@ -8,63 +8,12 @@
     </formats>
     <includeBaseDirectory>false</includeBaseDirectory>
     
-    <!-- 包含项目自身的类 -->
+    <!-- Agent 薄壳：只包含自身类（Agent.java + HotspotClassLoader.java） -->
+    <!-- 零依赖：core/插件/三方库由 HotspotClassLoader 在运行时加载 -->
     <fileSets>
         <fileSet>
             <directory>${project.build.outputDirectory}</directory>
             <outputDirectory>/</outputDirectory>
         </fileSet>
     </fileSets>
-    
-    <!-- 包含依赖，但排除可能冲突的库 -->
-    <dependencySets>
-        <dependencySet>
-            <outputDirectory>/</outputDirectory>
-            <unpack>true</unpack>
-            <scope>runtime</scope>
-            <!-- 排除 provided scope 的依赖 -->
-            <useProjectArtifact>false</useProjectArtifact>
-            <excludes>
-                <!-- =============== Tomcat 相关（关键！） =============== -->
-                <exclude>org.apache.tomcat.embed:*</exclude>
-                <exclude>org.apache.tomcat:*</exclude>
-                <!-- Tomcat 的包名前缀，确保排除所有 Tomcat 类 -->
-                <exclude>*:tomcat-*</exclude>
-                
-                <!-- =============== Servlet API =============== -->
-                <exclude>javax.servlet:*</exclude>
-                <exclude>jakarta.servlet:*</exclude>
-                <exclude>javax.servlet.jsp:*</exclude>
-                <exclude>jakarta.servlet.jsp:*</exclude>
-                
-                <!-- =============== Spring 相关 =============== -->
-                <exclude>org.springframework:*</exclude>
-                <exclude>org.springframework.boot:*</exclude>
-                <exclude>org.springframework.data:*</exclude>
-                <exclude>org.springframework.security:*</exclude>
-                
-                <!-- =============== Dubbo 相关 =============== -->
-                <exclude>org.apache.dubbo:*</exclude>
-                <exclude>com.alibaba:dubbo</exclude>
-                
-                <!-- =============== Netty =============== -->
-                <exclude>io.netty:*</exclude>
-                
-                <!-- =============== Undertow =============== -->
-                <exclude>io.undertow:*</exclude>
-                <exclude>org.jboss.xnio:*</exclude>
-                
-                <!-- =============== 日志框架 =============== -->
-                <exclude>org.slf4j:*</exclude>
-                <exclude>ch.qos.logback:*</exclude>
-                <exclude>org.apache.logging.log4j:*</exclude>
-                <exclude>commons-logging:*</exclude>
-                
-                <!-- =============== 其他可能冲突的库 =============== -->
-                <exclude>com.fasterxml.jackson.core:*</exclude>
-                <exclude>com.google.code.gson:*</exclude>
-                <exclude>io.micrometer:*</exclude>
-            </excludes>
-        </dependencySet>
-    </dependencySets>
 </assembly>

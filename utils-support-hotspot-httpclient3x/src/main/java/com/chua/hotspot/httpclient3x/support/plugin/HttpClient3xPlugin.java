@@ -3,6 +3,7 @@ package com.chua.hotspot.httpclient3x.support.plugin;
 import com.chua.hotspot.core.support.report.ReportFactory;
 import com.chua.hotspot.core.support.plugin.BytebuddyPlugin;
 import com.chua.hotspot.core.support.server.ServiceInstance;
+import com.chua.hotspot.core.support.utils.FastMethodHelper;
 import com.chua.hotspot.core.support.span.NewTrackManager;
 import com.chua.hotspot.core.support.span.Span;
 import net.bytebuddy.description.type.TypeDescription;
@@ -45,6 +46,7 @@ public class HttpClient3xPlugin extends BytebuddyPlugin {
             @AllArguments Object[] objects,
             @Super Object delegate,
             @SuperCall Callable<?> callable) throws Exception {
+        BytebuddyPlugin.interceptEnter();
         Span span = createBefore(target, method, objects);
         Object call = null;
         Throwable throwable = null;
@@ -52,9 +54,11 @@ public class HttpClient3xPlugin extends BytebuddyPlugin {
             call = callable.call();
         } catch (Exception e) {
             throwable = e;
+            BytebuddyPlugin.interceptError();
             throw new Exception(e);
         } finally {
             after(call, target, method, objects, span, throwable);
+            BytebuddyPlugin.interceptExit();
         }
         return call;
     }
@@ -99,25 +103,16 @@ public class HttpClient3xPlugin extends BytebuddyPlugin {
      * 获取 HTTP 方法名
      */
     private static String getHttpMethodName(Object httpMethod) {
-        try {
-            Method getName = httpMethod.getClass().getMethod("getName");
-            return (String) getName.invoke(httpMethod);
-        } catch (Exception e) {
-            return "UNKNOWN";
-        }
+        String result = FastMethodHelper.invokeString(httpMethod, "getName");
+        return result != null ? result : "UNKNOWN";
     }
 
     /**
      * 获取请求 URI
      */
     private static String getHttpMethodUri(Object httpMethod) {
-        try {
-            Method getUri = httpMethod.getClass().getMethod("getURI");
-            Object uri = getUri.invoke(httpMethod);
-            return uri != null ? uri.toString() : "UNKNOWN";
-        } catch (Exception e) {
-            return "UNKNOWN";
-        }
+        Object uri = FastMethodHelper.invoke(httpMethod, "getURI");
+        return uri != null ? uri.toString() : "UNKNOWN";
     }
 
     /**
@@ -149,9 +144,10 @@ public class HttpClient3xPlugin extends BytebuddyPlugin {
         if (linkId != null) {
             try {
                 // 添加链路追踪头
-                Method addRequestHeader = httpMethod.getClass().getMethod("addRequestHeader", String.class, String.class);
-                addRequestHeader.invoke(httpMethod, LINK_ID, linkId);
-                addRequestHeader.invoke(httpMethod, LINK_PID, pid);
+                FastMethodHelper.invoke(httpMethod, "addRequestHeader",
+                        new Class[]{String.class, String.class}, LINK_ID, linkId);
+                FastMethodHelper.invoke(httpMethod, "addRequestHeader",
+                        new Class[]{String.class, String.class}, LINK_PID, pid);
             } catch (Exception ignored) {
             }
 

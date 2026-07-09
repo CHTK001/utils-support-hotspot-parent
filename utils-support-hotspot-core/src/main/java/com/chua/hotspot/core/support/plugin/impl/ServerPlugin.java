@@ -34,8 +34,16 @@ public class ServerPlugin extends BytebuddyPlugin {
             @Super Object delegate,
             // 方法的调用者对象 对原始方法的调用依靠它
             @SuperCall Callable<?> callable) throws Exception {
-        sendInstance(objects);
-        return callable.call();
+        BytebuddyPlugin.interceptEnter();
+        try {
+            sendInstance(objects);
+            return callable.call();
+        } catch (Exception e) {
+            BytebuddyPlugin.interceptError();
+            throw e;
+        } finally {
+            BytebuddyPlugin.interceptExit();
+        }
     }
 
     /**

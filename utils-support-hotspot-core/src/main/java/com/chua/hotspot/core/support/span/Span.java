@@ -2,7 +2,6 @@ package com.chua.hotspot.core.support.span;
 
 import com.alibaba.fastjson.annotation.JSONField;
 import com.chua.hotspot.core.support.server.ServiceInstance;
-import lombok.Data;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -15,7 +14,6 @@ import java.util.List;
  * @since 2024/12/11
  * @version 4.0.0.34
  */
-@Data
 public class Span {
 
     private static final int INITIAL_LIST_CAPACITY = 8;
@@ -416,4 +414,83 @@ public class Span {
             this.children.add(child);
         }
     }
+
+    // ==================== Getter/Setter ====================
+
+    public String getThreadName() { return threadName; }
+
+    public String getLinkId() { return linkId; }
+    public void setLinkId(String linkId) { this.linkId = linkId; }
+
+    public String getId() { return id; }
+    public void setId(String id) { this.id = id; }
+
+    public String getPid() { return pid; }
+    public void setPid(String pid) { this.pid = pid; }
+
+    public Long getEnterTime() { return enterTime; }
+    public void setEnterTime(Long enterTime) { this.enterTime = enterTime; }
+
+    public Long getExitTime() { return exitTime; }
+    public void setExitTime(Long exitTime) { this.exitTime = exitTime; }
+
+    public long getCostTime() { return costTime; }
+    public void setCostTime(long costTime) { this.costTime = costTime; }
+
+    public String getTypeName() { return typeName; }
+    public void setTypeName(String typeName) { this.typeName = typeName; }
+
+    public String getMethod() { return method; }
+    public void setMethod(String method) { this.method = method; }
+
+    public String getFrom() { return from; }
+    public void setFrom(String from) { this.from = from; }
+
+    public String getDescription() { return description; }
+    public void setDescription(String description) { this.description = description; }
+
+    public String getCategory() { return category; }
+    public void setCategory(String category) { this.category = category; }
+
+    public String getDatabase() { return database; }
+    public void setDatabase(String database) { this.database = database; }
+
+    public String getProtocol() { return protocol; }
+    public void setProtocol(String protocol) { this.protocol = protocol; }
+
+    public String getAddress() { return address; }
+    public void setAddress(String address) { this.address = address; }
+
+    public String getCode() { return code; }
+    public void setCode(String code) { this.code = code; }
+
+    public String getError() { return error; }
+    public void setError(String error) { this.error = error; }
+
+    public List<String> getTips() { return tips; }
+    public void setTips(List<String> tips) { this.tips = tips; }
+
+    public List<String> getStackTrace() { return stackTrace; }
+
+    @JSONField(serialize = false)
+    public Object[] getArgs() { return args; }
+    public void setArgs(Object[] args) { this.args = args; }
+
+    public List<String> getParam() { return param; }
+    public void setParam(List<String> param) { this.param = param; }
+
+    public List<String> getQuery() { return query; }
+    public void setQuery(List<String> query) { this.query = query; }
+
+    public List<String> getHeaders() { return headers; }
+    public void setHeaders(List<String> headers) { this.headers = headers; }
+
+    public List<String> getLocations() { return locations; }
+    public void setLocations(List<String> locations) { this.locations = locations; }
+
+    public List<ServiceInstance> getInstances() { return instances; }
+    public void setInstances(List<ServiceInstance> instances) { this.instances = instances; }
+
+    public List<Span> getChildren() { return children; }
+    public void setChildren(List<Span> children) { this.children = children; }
 }

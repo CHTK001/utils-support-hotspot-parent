@@ -8,7 +8,9 @@ import com.chua.hotspot.core.support.utils.StringUtils;
 
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
@@ -158,6 +160,37 @@ public class LinkResolverFactory {
                 LOG.debug("链路解析器 [{}] 发送响应异常", resolver.name());
             }
         }
+    }
+
+    // ==================== 请求头提取 ====================
+
+    /**
+     * 从请求参数中提取所有请求头
+     * 用于分布式链路追踪上下文传播
+     *
+     * @param args 请求参数数组
+     * @return 请求头映射，无请求头则返回空 Map
+     */
+    public Map<String, String> extractHeaders(Object[] args) {
+        Map<String, String> allHeaders = new HashMap<>();
+        if (args == null) {
+            return allHeaders;
+        }
+        for (LinkResolver resolver : resolvers) {
+            if (ignoredResolvers.contains(resolver)) {
+                continue;
+            }
+            try {
+                Map<String, String> headers = resolver.extractHeaders(args);
+                if (headers != null && !headers.isEmpty()) {
+                    allHeaders.putAll(headers);
+                }
+            } catch (Throwable e) {
+                ignoredResolvers.add(resolver);
+                LOG.debug("链路解析器 [{}] 提取请求头异常，已忽略", resolver.name());
+            }
+        }
+        return allHeaders;
     }
 
     // ==================== 辅助方法 ====================

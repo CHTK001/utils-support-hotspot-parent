@@ -1,6 +1,7 @@
 package com.chua.hotspot.core.support.trace;
 
 import com.chua.hotspot.core.support.enums.ModuleType;
+import com.chua.hotspot.core.support.link.LinkResolverFactory;
 import com.chua.hotspot.core.support.report.ReportFactory;
 import com.chua.hotspot.core.support.span.NewTrackManager;
 import com.chua.hotspot.core.support.span.Span;
@@ -13,12 +14,13 @@ import com.chua.hotspot.core.support.utils.StringUtils;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 链路追踪辅助工具类
  * <p>
  * 提供各容器插件公共的链路追踪方法，统一管理：
- * - 请求前置处理
+ * - 请求前置处理（集成分布式链路追踪上下文）
  * - 请求后置处理
  * - 链路数据推送
  * - 请求信息刷新
@@ -41,7 +43,9 @@ public class TraceHelper {
     /**
      * 请求前置处理
      * <p>
-     * 创建 Span 并从请求头中提取链路信息
+     * 创建 Span 并从请求头中提取链路信息，同时集成分布式链路追踪上下文。
+     * 优先使用 DistributedTraceContext 中的 traceId 作为链路 ID，
+     * 实现跨进程的链路追踪传播。
      * </p>
      *
      * @param method   拦截的方法
@@ -55,15 +59,35 @@ public class TraceHelper {
                                      String protocol, String category) {
         Span span = NewTrackManager.createEntrySpan(objects);
         
-        // 从请求头中提取链路信息
-        String parentId = NewTrackManager.getRequestLinkParentId(objects);
-        String linkId = NewTrackManager.getRequestLinkId(objects);
-        
-        if (!StringUtils.isBlank(parentId)) {
-            span.setPid(parentId);
+        // 尝试从请求头中提取分布式链路追踪上下文
+        Map<String, String> headers = LinkResolverFactory.getInstance().extractHeaders(objects);
+        DistributedTraceContext traceContext = null;
+        if (headers != null && !headers.isEmpty()) {
+            traceContext = DistributedTraceContext.fromHeaders(headers);
         }
-        if (!StringUtils.isBlank(linkId)) {
-            span.setLinkId(linkId);
+        
+        if (traceContext != null) {
+            // 使用分布式追踪上下文的 traceId 作为链路 ID
+            String traceId = traceContext.getTraceId();
+            if (!StringUtils.isBlank(traceId)) {
+                span.setLinkId(traceId);
+            }
+            // 使用分布式追踪上下文的 parentSpanId 作为父 Span ID
+            String parentSpanId = traceContext.getParentSpanId();
+            if (!StringUtils.isBlank(parentSpanId)) {
+                span.setPid(parentSpanId);
+            }
+        } else {
+            // 降级：使用原有的 LinkResolver 方式提取链路信息
+            String parentId = NewTrackManager.getRequestLinkParentId(objects);
+            String linkId = NewTrackManager.getRequestLinkId(objects);
+            
+            if (!StringUtils.isBlank(parentId)) {
+                span.setPid(parentId);
+            }
+            if (!StringUtils.isBlank(linkId)) {
+                span.setLinkId(linkId);
+            }
         }
         
         // 设置协议和分类
@@ -77,19 +101,24 @@ public class TraceHelper {
     /**
      * 请求后置处理
      * <p>
-     * 记录耗时、刷新请求信息、推送完整链路
+     * 记录耗时、刷新请求信息、推送完整链路，并清除分布式追踪上下文
      * </p>
      *
      * @param span    当前 Span
      * @param objects 请求参数（用于刷新请求信息）
      */
     public static void afterRequest(Span span, Object[] objects) {
-        if (span != null) {
-            span.setArgs(objects);
-            NewTrackManager.costTime(span);
-            refreshRequestInfo(span);
+        try {
+            if (span != null) {
+                span.setArgs(objects);
+                NewTrackManager.costTime(span);
+                refreshRequestInfo(span);
+            }
+            publishCompleteTrace();
+        } finally {
+            // 清除分布式追踪上下文，防止 ThreadLocal 泄漏
+            DistributedTraceContext.clear();
         }
-        publishCompleteTrace();
     }
 
     /**

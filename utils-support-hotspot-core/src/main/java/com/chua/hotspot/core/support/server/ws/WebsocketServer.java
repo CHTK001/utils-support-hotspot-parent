@@ -31,7 +31,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * @version 4.0.0.34
  * @since 2024/12/12
  */
-public class WebSocketServer {
+public class WebsocketServer {
 
     private static final String WS_MAGIC_STRING = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
@@ -49,7 +49,7 @@ public class WebSocketServer {
      *
      * @param port 端口号
      */
-    public WebSocketServer(int port) {
+    public WebsocketServer(int port) {
         this.port = port;
     }
 

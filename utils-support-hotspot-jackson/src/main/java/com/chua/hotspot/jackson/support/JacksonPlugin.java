@@ -37,8 +37,16 @@ public class JacksonPlugin extends BytebuddyPlugin {
             @Super Object delegate,
             // 方法的调用者对象 对原始方法的调用依靠它
             @SuperCall Callable<?> callable) throws Exception {
-        register(target);
-        return callable.call();
+        BytebuddyPlugin.interceptEnter();
+        try {
+            register(target);
+            return callable.call();
+        } catch (Exception e) {
+            BytebuddyPlugin.interceptError();
+            throw e;
+        } finally {
+            BytebuddyPlugin.interceptExit();
+        }
     }
 
     private static void register(Object target) {

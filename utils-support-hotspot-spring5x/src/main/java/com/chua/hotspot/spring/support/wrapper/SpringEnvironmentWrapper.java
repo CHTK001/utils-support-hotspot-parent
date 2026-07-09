@@ -5,6 +5,7 @@ import com.chua.hotspot.core.support.report.ReportFactory;
 import com.chua.hotspot.core.support.utils.DigestUtils;
 import com.chua.hotspot.core.support.utils.NetUtils;
 import com.chua.hotspot.core.support.utils.NumberUtils;
+import com.chua.hotspot.core.support.utils.FastMethodHelper;
 import com.chua.hotspot.core.support.utils.StringUtils;
 import org.springframework.core.env.Environment;
 
@@ -124,7 +125,7 @@ public class SpringEnvironmentWrapper implements EnvironmentWrapper {
     private String getSpringVersion() {
         try {
             Class<?> clazz = Class.forName("org.springframework.core.SpringVersion");
-            return (String) clazz.getMethod("getVersion").invoke(null);
+            return (String) FastMethodHelper.invokeStatic(clazz, "getVersion", new Class[0]);
         } catch (Exception e) {
             return null;
         }
@@ -133,7 +134,7 @@ public class SpringEnvironmentWrapper implements EnvironmentWrapper {
     private String getSpringBootVersion() {
         try {
             Class<?> clazz = Class.forName("org.springframework.boot.SpringBootVersion");
-            return (String) clazz.getMethod("getVersion").invoke(null);
+            return (String) FastMethodHelper.invokeStatic(clazz, "getVersion", new Class[0]);
         } catch (Exception e) {
             return null;
         }
@@ -142,7 +143,7 @@ public class SpringEnvironmentWrapper implements EnvironmentWrapper {
     private String getTomcatVersion() {
         try {
             Class<?> clazz = Class.forName("org.apache.catalina.util.ServerInfo");
-            return (String) clazz.getMethod("getServerNumber").invoke(null);
+            return (String) FastMethodHelper.invokeStatic(clazz, "getServerNumber", new Class[0]);
         } catch (Exception e) {
             return null;
         }
@@ -151,7 +152,7 @@ public class SpringEnvironmentWrapper implements EnvironmentWrapper {
     private String getUndertowVersion() {
         try {
             Class<?> clazz = Class.forName("io.undertow.Version");
-            return (String) clazz.getMethod("getVersionString").invoke(null);
+            return (String) FastMethodHelper.invokeStatic(clazz, "getVersionString", new Class[0]);
         } catch (Exception e) {
             return null;
         }

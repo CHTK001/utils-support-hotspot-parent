@@ -5,6 +5,7 @@ import com.chua.hotspot.core.support.hotswap.Hotswap;
 import com.chua.hotspot.core.support.inst.InstrumentationFactory;
 import com.chua.hotspot.core.support.plugin.BytebuddyPlugin;
 import com.chua.hotspot.core.support.utils.ClassUtils;
+import com.chua.hotspot.core.support.utils.FastMethodHelper;
 import net.bytebuddy.description.type.TypeDescription;
 import net.bytebuddy.dynamic.DynamicType;
 import net.bytebuddy.implementation.MethodDelegation;
@@ -24,9 +25,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class FastJson2Plugin extends BytebuddyPlugin implements Hotswap<ClassSource> {
 
 
-    static Method beanUtilsCleanupMethod;
-    static Method writerCleanupMethod;
-    static Method readerCleanupMethod;
+    static Class<?> beanUtilsClass;
+    static Class<?> writerClass;
+    static Class<?> readerClass;
 
     static Map writerCache;
     static AtomicBoolean stauts = new AtomicBoolean(false);
@@ -48,44 +49,39 @@ public class FastJson2Plugin extends BytebuddyPlugin implements Hotswap<ClassSou
             @Super Object delegate,
             // 方法的调用者对象 对原始方法的调用依靠它
             @SuperCall Callable<?> callable) throws Exception {
-        register(target);
-        return callable.call();
+        BytebuddyPlugin.interceptEnter();
+        try {
+            register(target);
+            return callable.call();
+        } catch (Exception e) {
+            BytebuddyPlugin.interceptError();
+            throw e;
+        } finally {
+            BytebuddyPlugin.interceptExit();
+        }
     }
 
     private static void register(Object target) {
-        if (null == writerCleanupMethod && target.getClass().getTypeName().equals("com.alibaba.fastjson2.writer.ObjectWriterProvider")) {
+        if (null == writerClass && target.getClass().getTypeName().equals("com.alibaba.fastjson2.writer.ObjectWriterProvider")) {
             writer = target;
             writerCache = (Map) ClassUtils.getObject("cache", writer);
             writerCacheFieldBased = (Map) ClassUtils.getObject("cacheFieldBased", writer);
-            try {
-                writerCleanupMethod = target.getClass().getDeclaredMethod("cleanup", Class.class);
-                writerCleanupMethod.setAccessible(true);
-            } catch (NoSuchMethodException e) {
-            }
+            writerClass = target.getClass();
             refresh();
         }
 
 
-        if (null == readerCleanupMethod && target.getClass().getTypeName().equals("com.alibaba.fastjson2.writer.ObjectReaderProvider")) {
+        if (null == readerClass && target.getClass().getTypeName().equals("com.alibaba.fastjson2.writer.ObjectReaderProvider")) {
             reader = target;
             readerCache = (Map) ClassUtils.getObject("cache", reader);
             readerCacheFieldBased = (Map) ClassUtils.getObject("cacheFieldBased", reader);
-            try {
-                readerCleanupMethod = target.getClass().getDeclaredMethod("cleanup", Class.class);
-                readerCleanupMethod.setAccessible(true);
-            } catch (NoSuchMethodException e) {
-            }
+            readerClass = target.getClass();
             refresh();
         }
     }
 
     private static void refresh() {
-        Class<?> aClass = InstrumentationFactory.getInstance().getType("com.alibaba.fastjson2.util.BeanUtils");
-        try {
-            beanUtilsCleanupMethod = aClass.getMethod("cleanupCache", Class.class);
-            beanUtilsCleanupMethod.setAccessible(true);
-        } catch (NoSuchMethodException e) {
-        }
+        beanUtilsClass = InstrumentationFactory.getInstance().getType("com.alibaba.fastjson2.util.BeanUtils");
     }
 
     @Override
@@ -136,24 +132,20 @@ public class FastJson2Plugin extends BytebuddyPlugin implements Hotswap<ClassSou
     }
 
     private void readerMethodCleaup(Class<?> type) {
-        try {
-            beanUtilsCleanupMethod.invoke(null, type);
-        } catch (Exception e) {
+        if (beanUtilsClass != null) {
+            FastMethodHelper.invokeStatic(beanUtilsClass, "cleanupCache", new Class[]{Class.class}, type);
         }
-        try {
-            readerCleanupMethod.invoke(null, type);
-        } catch (Exception e) {
+        if (readerClass != null) {
+            FastMethodHelper.invokeStatic(readerClass, "cleanup", new Class[]{Class.class}, type);
         }
     }
 
     private void writerMethodCleaup(Class<?> type) {
-        try {
-            beanUtilsCleanupMethod.invoke(null, type);
-        } catch (Exception e) {
+        if (beanUtilsClass != null) {
+            FastMethodHelper.invokeStatic(beanUtilsClass, "cleanupCache", new Class[]{Class.class}, type);
         }
-        try {
-            writerCleanupMethod.invoke(null, type);
-        } catch (Exception e) {
+        if (writerClass != null) {
+            FastMethodHelper.invokeStatic(writerClass, "cleanup", new Class[]{Class.class}, type);
         }
     }
 

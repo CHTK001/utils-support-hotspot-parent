@@ -18,6 +18,9 @@ public class EnvironmentFactory {
     private static final EnvironmentFactory INSTANCE = new EnvironmentFactory();
     private JSONObject jsonObject;
 
+    /** 是否已初始化（幂等保护） */
+    private volatile boolean initialized = false;
+
     private EnvironmentFactory() {
     }
 
@@ -31,6 +34,9 @@ public class EnvironmentFactory {
     }
 
     public void init(String args) {
+        if (initialized) {
+            return;
+        }
         args = StringUtils.defaultValue(args, "");
         if (args.startsWith("{")) {
             jsonObject = JSON.parseObject(args);
@@ -47,6 +53,7 @@ public class EnvironmentFactory {
             }
         }
         check();
+        initialized = true;
     }
 
     private void check() {

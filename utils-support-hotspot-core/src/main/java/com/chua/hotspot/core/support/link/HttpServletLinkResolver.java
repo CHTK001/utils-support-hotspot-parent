@@ -3,7 +3,9 @@ package com.chua.hotspot.core.support.link;
 import com.chua.hotspot.core.support.span.Span;
 import com.chua.hotspot.core.support.utils.ClassUtils;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import static com.chua.hotspot.core.support.constant.Constant.LINK_ID;
 
@@ -49,6 +51,50 @@ public class HttpServletLinkResolver implements LinkResolver {
     @Override
     public void sendResponse(List<Span> spans, Object response) {
         // 暂不处理响应
+    }
+
+    @Override
+    public Map<String, String> extractHeaders(Object[] args) {
+        Map<String, String> headers = new HashMap<>();
+        if (args == null || args.length == 0) {
+            return headers;
+        }
+
+        Object arg = args[0];
+        if (arg == null || !isHttpServletRequest(arg)) {
+            return headers;
+        }
+
+        // 提取分布式追踪相关请求头
+        String[] traceHeaders = {
+            "X-Trace-Id", "X-Span-Id", "X-Parent-Span-Id", "X-Trace-Sampled",
+            "X-B3-TraceId", "X-B3-SpanId", "X-B3-ParentSpanId", "X-B3-Sampled",
+            LINK_ID
+        };
+
+        for (String headerName : traceHeaders) {
+            try {
+                String value = (String) ClassUtils.invoke("getHeader", arg, headerName);
+                if (value != null && !value.isEmpty()) {
+                    headers.put(headerName, value);
+                }
+            } catch (Exception ignored) {
+                // 忽略单个请求头提取异常
+            }
+        }
+
+        // 提取所有 X-Baggage- 前缀的请求头
+        try {
+            Object enumeration = ClassUtils.invoke("getHeaders", arg, "X-Baggage-");
+            if (enumeration != null) {
+                java.util.Iterator<?> it = (java.util.Iterator<?>) ClassUtils.invoke("asIterator", enumeration);
+                // 简化处理：仅提取已知前缀的 baggage 头
+            }
+        } catch (Exception ignored) {
+            // 忽略 baggage 提取异常
+        }
+
+        return headers;
     }
 
     @Override

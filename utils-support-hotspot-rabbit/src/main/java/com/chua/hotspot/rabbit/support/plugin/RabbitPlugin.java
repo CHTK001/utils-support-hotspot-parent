@@ -49,30 +49,37 @@ public class RabbitPlugin extends BytebuddyPlugin {
             @Super Object delegate,
             // 方法的调用者对象 对原始方法的调用依靠它
             @SuperCall Callable<?> callable) throws Exception {
-
-        Object call = callable.call();
+        BytebuddyPlugin.interceptEnter();
         try {
-            String name = method.getName();
-            if ("setHost".equals(name)) {
-                globalHost = String.valueOf(objects[0]);
-            }
+            Object call = callable.call();
+            try {
+                String name = method.getName();
+                if ("setHost".equals(name)) {
+                    globalHost = String.valueOf(objects[0]);
+                }
 
-            if ("setPort".equals(name)) {
-                globalPort = (Integer) objects[0];
-            }
+                if ("setPort".equals(name)) {
+                    globalPort = (Integer) objects[0];
+                }
 
-            if (null != globalHost && null != globalPort) {
-                ServiceInstance serviceInstance = new ServiceInstance();
-                serviceInstance.setName("RABBIT");
-                serviceInstance.setSourceHost(ReportFactory.APP_HOST);
-                serviceInstance.setSourcePort(Integer.parseInt(ReportFactory.APP_PORT));
-                serviceInstance.setTargetHost(globalHost);
-                serviceInstance.setTargetPort(globalPort);
-                ReportFactory.sendServiceInstance(serviceInstance);
+                if (null != globalHost && null != globalPort) {
+                    ServiceInstance serviceInstance = new ServiceInstance();
+                    serviceInstance.setName("RABBIT");
+                    serviceInstance.setSourceHost(ReportFactory.APP_HOST);
+                    serviceInstance.setSourcePort(Integer.parseInt(ReportFactory.APP_PORT));
+                    serviceInstance.setTargetHost(globalHost);
+                    serviceInstance.setTargetPort(globalPort);
+                    ReportFactory.sendServiceInstance(serviceInstance);
+                }
+            } catch (Exception ignored) {
             }
-        } catch (Exception ignored) {
+            return call;
+        } catch (Exception e) {
+            BytebuddyPlugin.interceptError();
+            throw e;
+        } finally {
+            BytebuddyPlugin.interceptExit();
         }
-        return call;
     }
 
     @Override

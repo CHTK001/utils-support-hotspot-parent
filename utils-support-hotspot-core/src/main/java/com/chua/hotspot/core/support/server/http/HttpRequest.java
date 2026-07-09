@@ -2,7 +2,6 @@ package com.chua.hotspot.core.support.server.http;
 
 import com.chua.hotspot.core.support.utils.NetAddress;
 import com.sun.net.httpserver.HttpExchange;
-import lombok.Getter;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -25,7 +24,6 @@ import static com.chua.hotspot.core.support.server.http.HttpServer.DEFAULT_CONTE
  * @version 4.0.0.34
  * @since 2024/12/12
  */
-@Getter
 public class HttpRequest {
 
     /**
@@ -73,6 +71,26 @@ public class HttpRequest {
                 this.queryParams.put(entry.getKey(), String.valueOf(entry.getValue()));
             }
         }
+    }
+
+    public HttpExchange getExchange() {
+        return exchange;
+    }
+
+    public String getPath() {
+        return path;
+    }
+
+    public String getMethod() {
+        return method;
+    }
+
+    public Map<String, String> getQueryParams() {
+        return queryParams;
+    }
+
+    public void setBody(String body) {
+        this.body = body;
     }
 
     /**

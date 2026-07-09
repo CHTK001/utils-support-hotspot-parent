@@ -33,6 +33,8 @@ public class JedisPlugin extends BytebuddyPlugin {
             @Super Object delegate,
             @SuperCall Callable<?> callable) throws Exception {
         
+        BytebuddyPlugin.interceptEnter();
+        
         // 提取连接信息用于链路追踪
         String host = null;
         Integer port = null;
@@ -62,9 +64,11 @@ public class JedisPlugin extends BytebuddyPlugin {
             return result;
         } catch (Exception e) {
             span.setError(e.getMessage());
+            BytebuddyPlugin.interceptError();
             throw e;
         } finally {
             NewTrackManager.costTime(span);
+            BytebuddyPlugin.interceptExit();
         }
     }
     

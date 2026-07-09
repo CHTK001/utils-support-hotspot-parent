@@ -6,11 +6,14 @@ import net.bytebuddy.jar.asm.Type;
 
 import java.io.*;
 import java.nio.channels.FileChannel;
+import java.nio.channels.SeekableByteChannel;
 import java.nio.channels.spi.AbstractInterruptibleChannel;
 import java.nio.channels.spi.AbstractSelectableChannel;
 import java.nio.channels.spi.AbstractSelector;
+import java.nio.file.DirectoryStream;
+import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.zip.ZipFile;
 
@@ -30,71 +33,145 @@ public class Spec {
      */
     private static final int ASM_VERSION = determineAsmVersion();
 
+    /**
+     * 创建字节码转换规格列表
+     * <p>
+     * 整合自 file-leak-detector，包含以下拦截：
+     * <ul>
+     *   <li>FileInputStream/FileOutputStream/RandomAccessFile/ZipFile 构造函数拦截</li>
+     *   <li>FileChannel.open 静态方法拦截</li>
+     *   <li>Files.newByteChannel/newDirectoryStream 静态方法拦截（整合自 file-leak-detector）</li>
+     *   <li>FileChannelImpl.open 静态方法拦截（整合自 file-leak-detector）</li>
+     *   <li>Pipe 构造函数拦截</li>
+     *   <li>AbstractInterruptibleChannel.close 拦截</li>
+     *   <li>DirectoryStream.close 拦截（OS特定，整合自 file-leak-detector）</li>
+     *   <li>Selector 构造函数和 close 拦截</li>
+     *   <li>SocketImpl/SocketChannel 拦截（Java 19 以下）</li>
+     * </ul>
+     * </p>
+     *
+     * @return 转换规格列表
+     */
     public static List<ClassTransformSpec> createSpec() {
-        return Arrays.asList(
-                newSpec(FileOutputStream.class, "(Ljava/io/File;Z)V"),
-                newSpec(FileInputStream.class, "(Ljava/io/File;)V"),
-                newSpec(RandomAccessFile.class, "(Ljava/io/File;Ljava/lang/String;)V"),
-                newSpec(ZipFile.class, "(Ljava/io/File;I)V"),
+        List<ClassTransformSpec> spec = new ArrayList<>();
 
-                /*
-                 * Detect the files opened via FileChannel.open(...) calls
-                 */
-                new ClassTransformSpec(FileChannel.class,
-                        new ReturnFromStaticMethodInterceptor("open",
-                                "(Ljava/nio/file/Path;Ljava/util/Set;[Ljava/nio/file/attribute/FileAttribute;)Ljava/nio/channels/FileChannel;", 4, "open_filechannel", FileChannel.class, Path.class)),
-                /*
-                 * Detect new Pipes
-                 */
-                new ClassTransformSpec(AbstractSelectableChannel.class,
-                        new ConstructorInterceptor("(Ljava/nio/channels/spi/SelectorProvider;)V", "openPipe")),
-                /*
-                 * AbstractInterruptibleChannel is used by FileChannel and Pipes
-                 */
-                new ClassTransformSpec(AbstractInterruptibleChannel.class,
-                        new CloseInterceptor("close")),
+        // ==================== 文件类句柄拦截 ====================
+        spec.add(newSpec(FileOutputStream.class, "(Ljava/io/File;Z)V"));
+        spec.add(newSpec(FileInputStream.class, "(Ljava/io/File;)V"));
+        spec.add(newSpec(RandomAccessFile.class, "(Ljava/io/File;Ljava/lang/String;)V"));
+        spec.add(newSpec(ZipFile.class, "(Ljava/io/File;I)V"));
 
-                /**
-                 * Detect selectors, which may open native pipes and anonymous inodes for event polling.
-                 */
-                new ClassTransformSpec(AbstractSelector.class,
-                        new ConstructorInterceptor("(Ljava/nio/channels/spi/SelectorProvider;)V", "openSelector"),
-                        new CloseInterceptor("close")),
+        /*
+         * Detect the files opened via FileChannel.open(...) calls
+         */
+        spec.add(new ClassTransformSpec(FileChannel.class,
+                new ReturnFromStaticMethodInterceptor("open",
+                        "(Ljava/nio/file/Path;Ljava/util/Set;[Ljava/nio/file/attribute/FileAttribute;)Ljava/nio/channels/FileChannel;",
+                        4, "open_filechannel", FileChannel.class, Path.class)));
 
-            /*
-                java.net.Socket/ServerSocket uses SocketImpl, and this is where FileDescriptors
-                are actually managed.
+        /*
+         * Detect instances opened via static methods in class java.nio.file.Files
+         * 整合自 file-leak-detector: 支持 SeekableByteChannel 和 DirectoryStream 的跟踪
+         */
+        spec.add(new ClassTransformSpec(Files.class,
+                // SeekableByteChannel newByteChannel(Path path, Set<? extends OpenOption> options, FileAttribute<?>... attrs)
+                new ReturnFromStaticMethodInterceptor("newByteChannel",
+                        "(Ljava/nio/file/Path;Ljava/util/Set;[Ljava/nio/file/attribute/FileAttribute;)Ljava/nio/channels/SeekableByteChannel;",
+                        4, "openFileChannel", SeekableByteChannel.class, Path.class),
+                // DirectoryStream<Path> newDirectoryStream(Path dir)
+                new ReturnFromStaticMethodInterceptor("newDirectoryStream",
+                        "(Ljava/nio/file/Path;)Ljava/nio/file/DirectoryStream;",
+                        2, "openDirectoryStream", DirectoryStream.class, Path.class),
+                // DirectoryStream<Path> newDirectoryStream(Path dir, String glob)
+                new ReturnFromStaticMethodInterceptor("newDirectoryStream",
+                        "(Ljava/nio/file/Path;Ljava/lang/String;)Ljava/nio/file/DirectoryStream;",
+                        6, "openDirectoryStream", DirectoryStream.class, Path.class),
+                // DirectoryStream<Path> newDirectoryStream(Path dir, DirectoryStream.Filter<? super Path> filter)
+                new ReturnFromStaticMethodInterceptor("newDirectoryStream",
+                        "(Ljava/nio/file/Path;Ljava/nio/file/DirectoryStream$Filter;)Ljava/nio/file/DirectoryStream;",
+                        3, "openDirectoryStream", DirectoryStream.class, Path.class)
+        ));
 
-                SocketInputStream/SocketOutputStream does not maintain a separate FileDescritor.
-                They just all piggy back on the same SocketImpl instance.
-             */
-                new ClassTransformSpec("java/net/PlainSocketImpl",
-                        // this is where a new file descriptor is allocated.
-                        // it'll occupy a socket even before it gets connected
-                        new OpenSocketInterceptor("create", "(Z)V"),
+        /*
+         * Detect new Pipes
+         */
+        spec.add(new ClassTransformSpec(AbstractSelectableChannel.class,
+                new ConstructorInterceptor("(Ljava/nio/channels/spi/SelectorProvider;)V", "openPipe")));
 
-                        // When a socket is accepted, it goes to "accept(SocketImpl s)"
-                        // where 's' is the new socket and 'this' is the server socket
-                        new AcceptInterceptor("accept", "(Ljava/net/SocketImpl;)V"),
+        /*
+         * AbstractInterruptibleChannel is used by FileChannel and Pipes
+         */
+        spec.add(new ClassTransformSpec(AbstractInterruptibleChannel.class,
+                new CloseInterceptor("close")));
 
-                        // file descriptor actually get closed in socketClose()
-                        // socketPreClose() appears to do something similar, but if you read the source code
-                        // of the native socketClose0() method, then you see that it actually doesn't close
-                        // a file descriptor.
-                        new CloseInterceptor("socketClose")
-                ),
-                // Later versions of the JDK abstracted out the parts of PlainSocketImpl above into a super class
-                new ClassTransformSpec("java/net/AbstractPlainSocketImpl",
-                        new OpenSocketInterceptor("create", "(Z)V"),
-                        new AcceptInterceptor("accept", "(Ljava/net/SocketImpl;)V"),
-                        new CloseInterceptor("socketClose")
-                ),
-                new ClassTransformSpec("sun/nio/ch/SocketChannelImpl",
-                        new OpenSocketInterceptor("<init>", "(Ljava/nio/channels/spi/SelectorProvider;Ljava/io/FileDescriptor;Ljava/net/InetSocketAddress;)V"),
-                        new OpenSocketInterceptor("<init>", "(Ljava/nio/channels/spi/SelectorProvider;)V"),
-                        new CloseInterceptor("kill")
-                )
-        );
+        /*
+         * We need to see closing of DirectoryStream instances,
+         * however they are OS-specific, so we need to list them via String-name
+         * 整合自 file-leak-detector: 支持 OS 特定的 DirectoryStream 关闭拦截
+         */
+        if (!System.getProperty("os.name").startsWith("Windows")) {
+            spec.add(new ClassTransformSpec("sun/nio/fs/UnixDirectoryStream", new CloseInterceptor("close")));
+            spec.add(new ClassTransformSpec("sun/nio/fs/UnixSecureDirectoryStream", new CloseInterceptor("close")));
+        } else {
+            spec.add(new ClassTransformSpec("sun/nio/fs/WindowsDirectoryStream", new CloseInterceptor("close")));
+        }
+        spec.add(new ClassTransformSpec("jdk/internal/jrtfs/JrtDirectoryStream", new CloseInterceptor("close")));
+        spec.add(new ClassTransformSpec("jdk/nio/zipfs/ZipDirectoryStream", new CloseInterceptor("close")));
+
+        /*
+         * Detect selectors, which may open native pipes and anonymous inodes for event polling.
+         */
+        spec.add(new ClassTransformSpec(AbstractSelector.class,
+                new ConstructorInterceptor("(Ljava/nio/channels/spi/SelectorProvider;)V", "openSelector"),
+                new CloseInterceptor("close")));
+
+        /*
+         * java.net.Socket/ServerSocket uses SocketImpl, and this is where FileDescriptors
+         * are actually managed.
+         *
+         * SocketInputStream/SocketOutputStream does not maintain a separate FileDescriptor.
+         * They just all piggy back on the same SocketImpl instance.
+         *
+         * 整合自 file-leak-detector: Java 19+ 不再需要拦截 PlainSocketImpl
+         */
+        if (Runtime.version().feature() < 19) {
+            spec.add(new ClassTransformSpec("java/net/PlainSocketImpl",
+                    // this is where a new file descriptor is allocated.
+                    // it'll occupy a socket even before it gets connected
+                    new OpenSocketInterceptor("create", "(Z)V"),
+                    // When a socket is accepted, it goes to "accept(SocketImpl s)"
+                    // where 's' is the new socket and 'this' is the server socket
+                    new AcceptInterceptor("accept", "(Ljava/net/SocketImpl;)V"),
+                    // file descriptor actually get closed in socketClose()
+                    new CloseInterceptor("socketClose")
+            ));
+            // Later versions of the JDK abstracted out the parts of PlainSocketImpl above into a super class
+            spec.add(new ClassTransformSpec("java/net/AbstractPlainSocketImpl",
+                    new OpenSocketInterceptor("create", "(Z)V"),
+                    new AcceptInterceptor("accept", "(Ljava/net/SocketImpl;)V"),
+                    new CloseInterceptor("socketClose")
+            ));
+        }
+
+        spec.add(new ClassTransformSpec("sun/nio/ch/SocketChannelImpl",
+                new OpenSocketInterceptor("<init>", "(Ljava/nio/channels/spi/SelectorProvider;Ljava/io/FileDescriptor;Ljava/net/InetSocketAddress;)V"),
+                new OpenSocketInterceptor("<init>", "(Ljava/nio/channels/spi/SelectorProvider;)V"),
+                new CloseInterceptor("kill")));
+
+        /*
+         * 整合自 file-leak-detector: 支持 FileChannelImpl.open 的字符串路径跟踪
+         * sun.nio.ch.FileChannelImpl 有两个 open 静态方法（Java 8/11/17 参数不同）
+         */
+        spec.add(new ClassTransformSpec("sun/nio/ch/FileChannelImpl",
+                new ReturnFromStaticMethodInterceptor("open",
+                        "(Ljava/io/FileDescriptor;Ljava/lang/String;ZZZLjava/io/Closeable;)Ljava/nio/channels/FileChannel;",
+                        4, "openFileString", Object.class, FileDescriptor.class, String.class),
+                // Java 11/17 使用 Object 而非 Closeable 作为最后一个参数
+                new ReturnFromStaticMethodInterceptor("open",
+                        "(Ljava/io/FileDescriptor;Ljava/lang/String;ZZZLjava/lang/Object;)Ljava/nio/channels/FileChannel;",
+                        4, "openFileString", Object.class, FileDescriptor.class, String.class)));
+
+        return spec;
     }
 
     /**

@@ -1,0 +1,11 @@
+server:
+  port: 18082
+
+spring:
+  application:
+    name: hotspot-test-service-b
+
+logging:
+  level:
+    root: INFO
+    com.chua.hotspot: DEBUG

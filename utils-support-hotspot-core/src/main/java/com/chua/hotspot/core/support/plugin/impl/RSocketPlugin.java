@@ -31,8 +31,16 @@ public class RSocketPlugin extends BytebuddyPlugin {
             @AllArguments Object[] objects,
             @Super Object delegate,
             @SuperCall Callable<?> callable) throws Exception {
-        sendInstance(objects);
-        return callable.call();
+        BytebuddyPlugin.interceptEnter();
+        try {
+            sendInstance(objects);
+            return callable.call();
+        } catch (Exception e) {
+            BytebuddyPlugin.interceptError();
+            throw e;
+        } finally {
+            BytebuddyPlugin.interceptExit();
+        }
     }
 
     /**

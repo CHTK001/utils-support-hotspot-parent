@@ -8,6 +8,7 @@ import com.chua.hotspot.core.support.span.NewTrackManager;
 import com.chua.hotspot.core.support.span.Span;
 import com.chua.hotspot.core.support.sql.DmlFormatter;
 import com.chua.hotspot.core.support.utils.ClassUtils;
+import com.chua.hotspot.core.support.utils.FastMethodHelper;
 import com.chua.hotspot.core.support.utils.NetAddress;
 import net.bytebuddy.description.type.TypeDescription;
 import net.bytebuddy.dynamic.DynamicType;
@@ -42,6 +43,7 @@ public class SqlServerPlugin extends BytebuddyPlugin {
             @Super Object delegate,
             @SuperCall(nullIfImpossible = true) Callable<?> callable) throws Exception {
         
+        BytebuddyPlugin.interceptEnter();
         long startTime = System.currentTimeMillis();
         String sql = null;
         String address = null;
@@ -59,6 +61,7 @@ public class SqlServerPlugin extends BytebuddyPlugin {
             call = NewTrackManager.invoke(callable);
         } catch (Exception e) {
             error = e.getMessage();
+            BytebuddyPlugin.interceptError();
             throw e;
         } finally {
             long duration = System.currentTimeMillis() - startTime;
@@ -68,6 +71,7 @@ public class SqlServerPlugin extends BytebuddyPlugin {
                 String fullAddress = address != null ? address + "/" + database : database;
                 SqlMonitorApi.addSqlRecord(sql, duration, error, fullAddress, database);
             }
+            BytebuddyPlugin.interceptExit();
         }
         return call;
     }
@@ -153,12 +157,8 @@ public class SqlServerPlugin extends BytebuddyPlugin {
         try {
             Object connection = ClassUtils.getObject("connection", target);
             if (connection != null) {
-                Method method = connection.getClass().getMethod("getCatalog");
-                if (!method.isAccessible()) {
-                    method.setAccessible(true);
-                }
-                Object result = method.invoke(connection);
-                return result != null ? result.toString() : "";
+                String result = FastMethodHelper.invokeString(connection, "getCatalog");
+                return result != null ? result : "";
             }
         } catch (Exception ignored) {
         }

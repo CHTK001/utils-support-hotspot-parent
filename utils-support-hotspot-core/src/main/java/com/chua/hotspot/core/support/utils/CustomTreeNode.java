@@ -1,7 +1,6 @@
 package com.chua.hotspot.core.support.utils;
 
 import com.chua.hotspot.core.support.span.Span;
-import lombok.Data;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -12,10 +11,12 @@ import java.util.stream.Collectors;
  *
  * @author CH
  */
-@Data
 public class CustomTreeNode {
 
     private List<Span> data = new LinkedList<>();
+
+    public List<Span> getData() { return data; }
+    public void setData(List<Span> data) { this.data = data; }
 
     /**
      * 添加数据

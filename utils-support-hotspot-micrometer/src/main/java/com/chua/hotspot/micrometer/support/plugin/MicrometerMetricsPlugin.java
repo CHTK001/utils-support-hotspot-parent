@@ -2,6 +2,7 @@ package com.chua.hotspot.micrometer.support.plugin;
 
 import com.chua.hotspot.core.support.plugin.BytebuddyPlugin;
 import com.chua.hotspot.core.support.report.ReportFactory;
+import com.chua.hotspot.core.support.utils.FastMethodHelper;
 import com.chua.hotspot.core.support.server.ServiceInstance;
 import net.bytebuddy.description.type.TypeDescription;
 import net.bytebuddy.dynamic.DynamicType;
@@ -30,7 +31,7 @@ public class MicrometerMetricsPlugin extends BytebuddyPlugin {
             @AllArguments Object[] args,
             @Super Object delegate,
             @SuperCall Callable<?> callable) throws Exception {
-        
+        BytebuddyPlugin.interceptEnter();
         try {
             Object result = callable.call();
             
@@ -48,7 +49,10 @@ public class MicrometerMetricsPlugin extends BytebuddyPlugin {
             return result;
         } catch (Exception e) {
             logFactory.error("Micrometer 指标监控失败", e);
+            BytebuddyPlugin.interceptError();
             throw e;
+        } finally {
+            BytebuddyPlugin.interceptExit();
         }
     }
     
@@ -57,12 +61,11 @@ public class MicrometerMetricsPlugin extends BytebuddyPlugin {
      */
     private static String extractMetricInfo(Object meter) {
         try {
-            Method getIdMethod = meter.getClass().getMethod("getId");
-            Object id = getIdMethod.invoke(meter);
+            Object id = FastMethodHelper.invoke(meter, "getId");
             
             if (id != null) {
-                Method getNameMethod = id.getClass().getMethod("getName");
-                return (String) getNameMethod.invoke(id);
+                String name = FastMethodHelper.invokeString(id, "getName");
+                return name != null ? name : "unknown";
             }
         } catch (Exception e) {
             // Ignore

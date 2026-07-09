@@ -64,9 +64,17 @@ public class KafkaPlugin extends BytebuddyPlugin {
             // 方法的调用者对象 对原始方法的调用依靠它
             @SuperCall Callable<?> callable) throws Exception {
 
-        Object result = callable.call();
-        extractAndReportKafkaServers(objects);
-        return result;
+        BytebuddyPlugin.interceptEnter();
+        try {
+            Object result = callable.call();
+            extractAndReportKafkaServers(objects);
+            return result;
+        } catch (Exception e) {
+            BytebuddyPlugin.interceptError();
+            throw e;
+        } finally {
+            BytebuddyPlugin.interceptExit();
+        }
     }
 
     // ==================== 私有方法 ====================

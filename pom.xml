@@ -44,12 +44,14 @@
     <!-- 子模块列表：各种热点监控组件 -->
     <modules>
         <!-- 核心模块 -->
+        <!-- Spy：Bootstrap CL 桥接模块（零依赖，注入Bootstrap CL） -->
+        <module>utils-support-hotspot-spy</module>
         <!-- Agent：Java代理核心模块 -->
         <module>utils-support-hotspot-agent</module>
         <!-- Core：监控核心功能模块 -->
         <module>utils-support-hotspot-core</module>
         <!-- UI：Web界面展示模块（已禁用，使用独立 Vue 项目测试）-->
-        <!-- <module>utils-support-hotspot-ui</module> -->
+        <module>utils-support-hotspot-ui</module>
 
         <!-- 数据库监控 -->
         <!-- P6Spy：SQL语句监控 -->
@@ -140,6 +142,14 @@
         <!-- 性能分析 -->
         <!-- Profiler：慢方法分析模块 -->
         <module>utils-support-hotspot-profiler</module>
+
+        <!-- 测试 -->
+        <!-- TestAgent：Agent测试程序（验证FastMethodHelper和AgentSelfMonitor） -->
+        <module>utils-support-hotspot-test-agent</module>
+        <!-- TestSpringBoot A：服务A（调用方，端口18081）- 链路追踪测试 -->
+        <module>utils-support-hotspot-test-springboot-a</module>
+        <!-- TestSpringBoot B：服务B（被调用方，端口18082）- 链路追踪测试 -->
+        <module>utils-support-hotspot-test-springboot-b</module>
     </modules>
 
     <!-- 项目属性配置 -->
@@ -193,14 +203,12 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.14.1</version>
+                <version>3.11.0</version>
                 <configuration>
                     <!-- 源代码兼容性：Java 8 -->
                     <source>8</source>
                     <!-- 目标字节码版本：Java 8 -->
                     <target>8</target>
-                    <!-- 发布版本：Java 8 -->
-                    <release>8</release>
                     <!-- 注解处理器配置：确保Lombok正常工作 -->
                     <annotationProcessorPaths>
                         <path>

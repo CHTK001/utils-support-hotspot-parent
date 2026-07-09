@@ -18,6 +18,7 @@ import java.nio.channels.FileChannel;
 import java.nio.channels.spi.AbstractInterruptibleChannel;
 import java.nio.channels.spi.AbstractSelectableChannel;
 import java.nio.channels.spi.AbstractSelector;
+import java.nio.file.Files;
 import java.security.ProtectionDomain;
 import java.util.*;
 import java.util.logging.Logger;
@@ -52,19 +53,49 @@ public class TransformerImpl implements ClassFileTransformer {
 
     };
 
+    /**
+     * 需要拦截的类名列表
+     * <p>
+     * 整合自 file-leak-detector，包含以下类的拦截：
+     * <ul>
+     *   <li>基础 IO 类：FileInputStream/FileOutputStream/RandomAccessFile/ZipFile</li>
+     *   <li>NIO 类：FileChannel/AbstractSelectableChannel/AbstractInterruptibleChannel/AbstractSelector/Files</li>
+     *   <li>Socket 类：PlainSocketImpl/AbstractPlainSocketImpl/SocketChannelImpl</li>
+     *   <li>OS 特定类：UnixDirectoryStream/WindowsDirectoryStream/JrtDirectoryStream/ZipDirectoryStream</li>
+     *   <li>FileChannelImpl：sun.nio.ch.FileChannelImpl</li>
+     * </ul>
+     * </p>
+     */
     private final List<String> names = new ArrayList<String>() {
         {
+            // 基础 IO 类
             add(FilterOutputStream.class.getName().replace(".", "/"));
             add(FileInputStream.class.getName().replace(".", "/"));
             add(FileOutputStream.class.getName().replace(".", "/"));
             add(RandomAccessFile.class.getName().replace(".", "/"));
-            add("java.net.PlainSocketImpl".replace(".", "/"));
             add(ZipFile.class.getName().replace(".", "/"));
+
+            // NIO 类
+            add(FileChannel.class.getName().replace(".", "/"));
             add(AbstractSelectableChannel.class.getName().replace(".", "/"));
             add(AbstractInterruptibleChannel.class.getName().replace(".", "/"));
-            add(FileChannel.class.getName().replace(".", "/"));
             add(AbstractSelector.class.getName().replace(".", "/"));
+            add(Files.class.getName().replace(".", "/"));
 
+            // Socket 类
+            add("java/net/PlainSocketImpl");
+            add("java/net/AbstractPlainSocketImpl");
+            add("sun/nio/ch/SocketChannelImpl");
+
+            // FileChannelImpl（整合自 file-leak-detector）
+            add("sun/nio/ch/FileChannelImpl");
+
+            // OS 特定的 DirectoryStream（整合自 file-leak-detector）
+            add("sun/nio/fs/UnixDirectoryStream");
+            add("sun/nio/fs/UnixSecureDirectoryStream");
+            add("sun/nio/fs/WindowsDirectoryStream");
+            add("jdk/internal/jrtfs/JrtDirectoryStream");
+            add("jdk/nio/zipfs/ZipDirectoryStream");
         }
     };
     private final Map<String, ClassTransformSpec> specs = new HashMap<String, ClassTransformSpec>();

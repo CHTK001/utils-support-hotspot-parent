@@ -3,6 +3,7 @@ package com.chua.hotspot.spring.support.plugin;
 import com.chua.hotspot.core.support.plugin.BytebuddyPlugin;
 import com.chua.hotspot.core.support.report.ReportFactory;
 import com.chua.hotspot.core.support.server.ServiceInstance;
+import com.chua.hotspot.core.support.utils.FastMethodHelper;
 import com.chua.hotspot.core.support.utils.ClassUtils;
 import net.bytebuddy.description.type.TypeDescription;
 import net.bytebuddy.dynamic.DynamicType;
@@ -101,12 +102,10 @@ public class RedisTemplatePlugin extends BytebuddyPlugin {
     private static String extractLettuceHost(Object factory) {
         try {
             // 尝试获取 StandaloneConfiguration
-            Method getStandaloneConfig = factory.getClass().getMethod("getStandaloneConfiguration");
-            Object config = getStandaloneConfig.invoke(factory);
+            Object config = FastMethodHelper.invoke(factory, "getStandaloneConfiguration");
             
             if (config != null) {
-                Method getHostName = config.getClass().getMethod("getHostName");
-                return (String) getHostName.invoke(config);
+                return FastMethodHelper.invokeString(config, "getHostName");
             }
             
             // 尝试从 clientConfiguration 获取
@@ -129,12 +128,10 @@ public class RedisTemplatePlugin extends BytebuddyPlugin {
     private static int extractLettucePort(Object factory) {
         try {
             // 尝试获取 StandaloneConfiguration
-            Method getStandaloneConfig = factory.getClass().getMethod("getStandaloneConfiguration");
-            Object config = getStandaloneConfig.invoke(factory);
+            Object config = FastMethodHelper.invoke(factory, "getStandaloneConfiguration");
             
             if (config != null) {
-                Method getPort = config.getClass().getMethod("getPort");
-                return (int) getPort.invoke(config);
+                return FastMethodHelper.invokeInt(config, "getPort");
             }
             
             // 尝试从 clientConfiguration 获取
@@ -160,12 +157,10 @@ public class RedisTemplatePlugin extends BytebuddyPlugin {
     private static String extractJedisHost(Object factory) {
         try {
             // 尝试获取 StandaloneConfiguration
-            Method getStandaloneConfig = factory.getClass().getMethod("getStandaloneConfiguration");
-            Object config = getStandaloneConfig.invoke(factory);
+            Object config = FastMethodHelper.invoke(factory, "getStandaloneConfiguration");
             
             if (config != null) {
-                Method getHostName = config.getClass().getMethod("getHostName");
-                return (String) getHostName.invoke(config);
+                return FastMethodHelper.invokeString(config, "getHostName");
             }
             
             // 降级方案：从 hostName 字段获取
@@ -185,12 +180,10 @@ public class RedisTemplatePlugin extends BytebuddyPlugin {
     private static int extractJedisPort(Object factory) {
         try {
             // 尝试获取 StandaloneConfiguration
-            Method getStandaloneConfig = factory.getClass().getMethod("getStandaloneConfiguration");
-            Object config = getStandaloneConfig.invoke(factory);
+            Object config = FastMethodHelper.invoke(factory, "getStandaloneConfiguration");
             
             if (config != null) {
-                Method getPort = config.getClass().getMethod("getPort");
-                return (int) getPort.invoke(config);
+                return FastMethodHelper.invokeInt(config, "getPort");
             }
             
             // 降级方案：从 port 字段获取

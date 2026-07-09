@@ -2,7 +2,6 @@ package com.chua.hotspot.core.support.report;
 
 import com.chua.hotspot.core.support.environment.Project;
 import com.chua.hotspot.core.support.enums.ModuleType;
-import lombok.Data;
 
 /**
  * 上报数据对象
@@ -14,7 +13,6 @@ import lombok.Data;
  * @version 4.0.0.34
  * @since 2024/12/12
  */
-@Data
 public class ReportData {
 
     /**
@@ -62,6 +60,70 @@ public class ReportData {
      */
     public ReportData() {
         this.timestamp = System.currentTimeMillis();
+    }
+
+    public String getIp() {
+        return ip;
+    }
+
+    public void setIp(String ip) {
+        this.ip = ip;
+    }
+
+    public Integer getPort() {
+        return port;
+    }
+
+    public void setPort(Integer port) {
+        this.port = port;
+    }
+
+    public String getProfile() {
+        return profile;
+    }
+
+    public void setProfile(String profile) {
+        this.profile = profile;
+    }
+
+    public String getApplicationName() {
+        return applicationName;
+    }
+
+    public void setApplicationName(String applicationName) {
+        this.applicationName = applicationName;
+    }
+
+    public String getModuleType() {
+        return moduleType;
+    }
+
+    public void setModuleType(String moduleType) {
+        this.moduleType = moduleType;
+    }
+
+    public String getEvent() {
+        return event;
+    }
+
+    public void setEvent(String event) {
+        this.event = event;
+    }
+
+    public Object getData() {
+        return data;
+    }
+
+    public void setData(Object data) {
+        this.data = data;
+    }
+
+    public Long getTimestamp() {
+        return timestamp;
+    }
+
+    public void setTimestamp(Long timestamp) {
+        this.timestamp = timestamp;
     }
 
     /**

@@ -74,7 +74,13 @@ public enum ModuleType {
      * JVM 监控
      * JVM 运行时信息，包括内存、线程、GC 等
      */
-    JVM;
+    JVM,
+
+    /**
+     * 告警
+     * 告警规则管理和告警事件触发
+     */
+    ALERT;
 
     /**
      * 根据名称获取模块类型

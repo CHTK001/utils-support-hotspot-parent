@@ -1,6 +1,7 @@
 package com.chua.hotspot.httpclient5x.support.plugin;
 
 import com.chua.hotspot.core.support.report.ReportFactory;
+import com.chua.hotspot.core.support.plugin.BytebuddyPlugin;
 import com.chua.hotspot.core.support.server.ServiceInstance;
 import com.chua.hotspot.core.support.utils.NetAddress;
 import net.bytebuddy.description.type.TypeDescription;
@@ -30,9 +31,16 @@ public class HttpClient5xPlugin extends com.chua.hotspot.httpclient4x.support.pl
             @AllArguments Object[] objects,
             @Super Object delegate,
             @SuperCall(nullIfImpossible = true) Callable<?> callable) throws Exception {
-        
-        captureRequest(objects);
-        return callable.call();
+        BytebuddyPlugin.interceptEnter();
+        try {
+            captureRequest(objects);
+            return callable.call();
+        } catch (Exception e) {
+            BytebuddyPlugin.interceptError();
+            throw e;
+        } finally {
+            BytebuddyPlugin.interceptExit();
+        }
     }
 
     /**

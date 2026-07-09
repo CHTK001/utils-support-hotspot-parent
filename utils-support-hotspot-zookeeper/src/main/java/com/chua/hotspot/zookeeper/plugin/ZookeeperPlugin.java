@@ -46,22 +46,29 @@ public class ZookeeperPlugin extends BytebuddyPlugin {
             @Super Object delegate,
             // 方法的调用者对象 对原始方法的调用依靠它
             @SuperCall Callable<?> callable) throws Exception {
-
-        Object call = callable.call();
-        List<InetSocketAddress> addressList = (List<InetSocketAddress>) call;
-        for (InetSocketAddress inetSocketAddress : addressList) {
-            ServiceInstance serviceInstance = new ServiceInstance();
-            serviceInstance.setName("ZOOKEEPER");
-            serviceInstance.setSourceHost(ReportFactory.APP_HOST);
-            try {
-                serviceInstance.setSourcePort(Integer.parseInt(ReportFactory.APP_PORT));
-            } catch (Exception ignored) {
+        BytebuddyPlugin.interceptEnter();
+        try {
+            Object call = callable.call();
+            List<InetSocketAddress> addressList = (List<InetSocketAddress>) call;
+            for (InetSocketAddress inetSocketAddress : addressList) {
+                ServiceInstance serviceInstance = new ServiceInstance();
+                serviceInstance.setName("ZOOKEEPER");
+                serviceInstance.setSourceHost(ReportFactory.APP_HOST);
+                try {
+                    serviceInstance.setSourcePort(Integer.parseInt(ReportFactory.APP_PORT));
+                } catch (Exception ignored) {
+                }
+                serviceInstance.setTargetHost(inetSocketAddress.getHostString());
+                serviceInstance.setTargetPort(inetSocketAddress.getPort());
+                ReportFactory.sendServiceInstance(serviceInstance);
             }
-            serviceInstance.setTargetHost(inetSocketAddress.getHostString());
-            serviceInstance.setTargetPort(inetSocketAddress.getPort());
-            ReportFactory.sendServiceInstance(serviceInstance);
+            return call;
+        } catch (Exception e) {
+            BytebuddyPlugin.interceptError();
+            throw e;
+        } finally {
+            BytebuddyPlugin.interceptExit();
         }
-        return call;
     }
 
     @Override
