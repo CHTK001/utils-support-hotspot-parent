@@ -72,6 +72,8 @@
         <module>utils-support-hotspot-oracle</module>
         <!-- SQL Server：SQL Server数据库监控 -->
         <module>utils-support-hotspot-sqlserver</module>
+        <!-- HikariCP：HikariCP连接池监控 -->
+        <module>utils-support-hotspot-hikaricp</module>
 
         <!-- Web服务器监控 -->
         <!-- Tomcat9x：Tomcat 9.x容器监控 -->

@@ -52,13 +52,14 @@ public class PluginRegistry {
         "com.chua.hotspot.jedis.support.PluginRegistration",
         "com.chua.hotspot.lettuce.support.PluginRegistration",
         "com.chua.hotspot.dragonfly.support.PluginRegistration",
-        // 数据库相关（mysql、oracle、pgsql、sqlserver、mybatis、p6spy）
+        // 数据库相关（mysql、oracle、pgsql、sqlserver、mybatis、p6spy、hikaricp）
         "com.chua.hotspot.mysql.support.PluginRegistration",
         "com.chua.hotspot.oracle.support.PluginRegistration",
         "com.chua.hotspot.pgsql.support.PluginRegistration",
         "com.chua.hotspot.sqlserver.support.PluginRegistration",
         "com.chua.hotspot.mybatis.support.PluginRegistration",
         "com.chua.hotspot.p6spy.support.PluginRegistration",
+        "com.chua.hotspot.hikaricp.support.PluginRegistration",
         // Spring 相关（spring5x、spring6x）
         "com.chua.hotspot.spring.support.PluginRegistration",
         "com.chua.hotspot.spring6x.support.PluginRegistration",
