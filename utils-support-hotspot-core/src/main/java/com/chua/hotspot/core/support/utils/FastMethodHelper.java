@@ -35,7 +35,7 @@ public final class FastMethodHelper {
     /**
      * 调用失败标记（避免重复查找不存在的方法）
      */
-    private static final MethodHandle NULL_HANDLE = MethodHandles.zero(Object.class);
+    private static final MethodHandle NULL_HANDLE = MethodHandles.constant(Object.class, null);
 
     /**
      * 调用无参方法（返回 Object）
