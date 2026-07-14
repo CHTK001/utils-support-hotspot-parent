@@ -26,6 +26,9 @@ public class SpyAdvice {
                 @Advice.Origin("#m") String methodName,
                 @Advice.This(optional = true, readOnly = true) Object target,
                 @Advice.AllArguments Object[] args) {
+            if (className.contains("StandardHostValve")) {
+                System.out.println("[SPY] SpyAdvice.Enter: " + className + "." + methodName);
+            }
             Spy.before(className, methodName, target, args);
         }
     }

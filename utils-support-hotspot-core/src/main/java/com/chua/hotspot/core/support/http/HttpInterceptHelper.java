@@ -2,6 +2,7 @@ package com.chua.hotspot.core.support.http;
 
 import com.chua.hotspot.core.support.perf.HttpPerformanceRecorder;
 import com.chua.hotspot.core.support.recorder.MappingQpsRecorder;
+import com.chua.hotspot.core.support.recorder.ContainerQpsRecorder;
 import com.chua.hotspot.core.support.monitor.AgentSelfMonitor;
 import com.chua.hotspot.core.support.span.Span;
 import com.chua.hotspot.core.support.trace.TraceHelper;
@@ -33,6 +34,8 @@ public class HttpInterceptHelper {
         public long startTime;
         public String category;
         public boolean hasError;
+        /** 容器类型（大写，如 TOMCAT/UNDERTOW/JETTY） */
+        public String containerType;
         
         private HttpContext() {}
     }
@@ -52,6 +55,14 @@ public class HttpInterceptHelper {
         HttpContext ctx = new HttpContext();
         ctx.category = category;
         ctx.startTime = System.currentTimeMillis();
+        
+        // 记录 QPS 和活跃连接数
+        try {
+            String ct = category.toUpperCase();
+            ctx.containerType = ct;
+            ContainerQpsRecorder.getInstance().recordRequestStart(ct);
+        } catch (Exception ignored) {
+        }
         
         // 创建 Span
         ctx.span = TraceHelper.beforeRequest(method, args, target, PROTOCOL, category);
@@ -82,6 +93,16 @@ public class HttpInterceptHelper {
      */
     public static void after(HttpContext ctx, Object[] args) {
         if (ctx == null) return;
+        
+        // 记录 QPS 请求结束
+        try {
+            String ct = ctx.containerType;
+            if (ct == null) { ct = ctx.category != null ? ctx.category.toUpperCase() : null; }
+            if (ct != null) {
+                ContainerQpsRecorder.getInstance().recordRequestEnd(ct);
+            }
+        } catch (Exception ignored) {
+        }
         
         // 上报拦截耗时到 AgentSelfMonitor
         long costNanos = (System.currentTimeMillis() - ctx.startTime) * 1_000_000L;

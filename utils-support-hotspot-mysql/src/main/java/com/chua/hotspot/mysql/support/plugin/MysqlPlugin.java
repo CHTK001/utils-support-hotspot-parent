@@ -10,10 +10,8 @@ import com.chua.hotspot.core.support.sql.DmlFormatter;
 import com.chua.hotspot.core.support.utils.ClassUtils;
 import com.chua.hotspot.core.support.utils.FastMethodHelper;
 import com.chua.hotspot.core.support.utils.NetAddress;
+import net.bytebuddy.description.method.MethodDescription;
 import net.bytebuddy.description.type.TypeDescription;
-import net.bytebuddy.dynamic.DynamicType;
-import net.bytebuddy.implementation.MethodDelegation;
-import net.bytebuddy.implementation.bind.annotation.*;
 import net.bytebuddy.matcher.ElementMatcher;
 import net.bytebuddy.matcher.ElementMatchers;
 
@@ -21,80 +19,128 @@ import java.lang.reflect.Method;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
+ * MySQL PreparedStatement 拦截插件
+ * <p>
+ * 拦截 com.mysql.cj.AbstractPreparedQuery.fillSendPacket 方法，
+ * 实现 SQL 执行的链路追踪和性能监控。
+ * 使用 Advice + Spy 模式，避免 MethodDelegation 的 ClassLoader 可见性问题。
+ * </p>
+ *
  * @author CH
+ * @version 4.0.0.40
  */
 public class MysqlPlugin extends BytebuddyPlugin {
     private static final Map<Object, String> cacheAddress = new ConcurrentHashMap<>();
 
-    /**
-     * 将返回值转换成具体的方法返回值类型,加了这个注解 intercept 方法才会被执行
-     *
-     * @param target   目标
-     * @param method   方法
-     * @param objects  参数
-     * @param delegate 目标对象的一个代理
-     * @param callable 方法的调用者对象
-     * @return 结果
-     * @throws Exception ex
-     */
-    @RuntimeType
-    public static Object intercept(
-            @This Object target,
-            @Origin Method method,
-            @AllArguments Object[] objects,
-            @Super Object delegate,
-            @SuperCall(nullIfImpossible = true) Callable<?> callable) throws Exception {
-        
-        BytebuddyPlugin.interceptEnter();
-        long startTime = System.currentTimeMillis();
-        String sql = null;
-        String address = null;
-        String database = null;
-        String error = null;
-        
-        Span span = null;
-        Object call = null;
-        try {
-            // 获取 SQL 信息
-            sql = getSql(target);
-            address = getAddress(target);
-            database = getCurrentDb(target);
-            
-            span = createBefore(target, method, objects, sql, address, database);
-            call = NewTrackManager.invoke(callable);
-        } catch (Exception e) {
-            error = e.getMessage();
-            BytebuddyPlugin.interceptError();
-            throw e;
-        } finally {
-            long duration = System.currentTimeMillis() - startTime;
-            NewTrackManager.costTime(span);
-            BytebuddyPlugin.interceptExit();
-            
-            // 推送 SQL 记录到 WebSocket
-            if (sql != null && !sql.isEmpty()) {
-                String fullAddress = address != null ? address + "/" + database : database;
-                SqlMonitorApi.addSqlRecord(sql, duration, error, fullAddress, database);
-            }
-        }
-        return call;
+    // ==================== Advice + Spy 模式配置 ====================
+
+    @Override
+    public String name() {
+        return "Mysql";
     }
 
-    private static Span createBefore(Object target, Method method, Object[] objects, String sql, String address, String database) {
+    @Override
+    public ElementMatcher<? super TypeDescription> type() {
+        return ElementMatchers.named("com.mysql.cj.AbstractPreparedQuery");
+    }
+
+    @Override
+    public ElementMatcher<? super MethodDescription> methodMatcher() {
+        return ElementMatchers.named("fillSendPacket")
+                .and(ElementMatchers.takesArgument(0, ElementMatchers.named("com.mysql.cj.QueryBindings")));
+    }
+
+    @Override
+    public boolean useLegacyMethodDelegation() {
+        return false;
+    }
+
+    // ==================== Spy 回调实现 ====================
+
+    @Override
+    public void spyBefore(String className, String methodName, Object target, Object[] args) {
+        super.spyBefore(className, methodName, target, args);
+        try {
+            String sql = getSql(target);
+            String address = getAddress(target);
+            String database = getCurrentDb(target);
+
+            Span span = createBefore(target, methodName, args, sql, address, database);
+            SpyContext spyCtx = getSpyContext();
+            if (spyCtx != null) {
+                spyCtx.span = span;
+            }
+        } catch (Exception e) {
+            // 忽略拦截异常，不影响目标方法执行
+        }
+    }
+
+    @Override
+    public void spyAfter(String className, String methodName, Object target, Object[] args, Object result) {
+        try {
+            SpyContext spyCtx = getSpyContext();
+            if (spyCtx != null) {
+                Span span = spyCtx.span;
+                long duration = System.currentTimeMillis() - (spyCtx.startNanos / 1_000_000);
+                NewTrackManager.costTime(span);
+
+                // 推送 SQL 记录到 WebSocket
+                String sql = getSql(target);
+                String address = getAddress(target);
+                String database = getCurrentDb(target);
+                if (sql != null && !sql.isEmpty()) {
+                    String fullAddress = address != null ? address + "/" + database : database;
+                    SqlMonitorApi.addSqlRecord(sql, duration, null, fullAddress, database);
+                }
+            }
+        } catch (Exception e) {
+            // 忽略拦截异常
+        }
+        super.spyAfter(className, methodName, target, args, result);
+    }
+
+    @Override
+    public void spyError(String className, String methodName, Object target, Object[] args, Throwable throwable) {
+        try {
+            SpyContext spyCtx = getSpyContext();
+            if (spyCtx != null) {
+                Span span = spyCtx.span;
+                long duration = System.currentTimeMillis() - (spyCtx.startNanos / 1_000_000);
+                NewTrackManager.costTime(span);
+
+                // 推送 SQL 记录到 WebSocket（带错误信息）
+                String sql = getSql(target);
+                String address = getAddress(target);
+                String database = getCurrentDb(target);
+                if (sql != null && !sql.isEmpty()) {
+                    String fullAddress = address != null ? address + "/" + database : database;
+                    String error = throwable != null ? throwable.getMessage() : null;
+                    SqlMonitorApi.addSqlRecord(sql, duration, error, fullAddress, database);
+                }
+            }
+        } catch (Exception e) {
+            // 忽略拦截异常
+        }
+        super.spyError(className, methodName, target, args, throwable);
+    }
+
+    // ==================== 辅助方法 ====================
+
+    private Span createBefore(Object target, String methodName, Object[] objects, String sql, String address, String database) {
         try {
             publishServer(address);
             String fullAddress = address + "/" + database;
+            Method method = findMethod(target, methodName, objects);
             return createSpan(target, database, method, sql, fullAddress, objects);
         } catch (Exception ignored) {
         }
         return null;
     }
 
-    private static void publishServer(String address) {
+    private void publishServer(String address) {
         try {
             NetAddress netAddress = NetAddress.of(address);
             ServiceInstance ss = new ServiceInstance();
@@ -106,10 +152,9 @@ public class MysqlPlugin extends BytebuddyPlugin {
             ReportFactory.sendServiceInstance(ss);
         } catch (Exception ignored) {
         }
-
     }
 
-    private static String getAddress(Object target) {
+    private String getAddress(Object target) {
         if (cacheAddress.size() > 100) {
             cacheAddress.clear();
         }
@@ -137,29 +182,27 @@ public class MysqlPlugin extends BytebuddyPlugin {
 
     /**
      * 创建跨度
-     * 发送到链路
      *
-     * @param method    method
-     * @param sql       sql
      * @param target    目标
-     * @param currentDb 电流db
-     * @param address   住址
-     * @param objects   对象
-     * @return {@link Span}
+     * @param currentDb 当前数据库
+     * @param method    方法
+     * @param sql       SQL语句
+     * @param address   地址
+     * @param objects   参数
+     * @return Span
      */
-    private static Span createSpan(Object target, String currentDb, Method method, String sql, String address, Object[] objects) {
-        // 使用 NewTrackManager 创建 Span，确保写入 SPAN_STACK
+    private Span createSpan(Object target, String currentDb, Method method, String sql, String address, Object[] objects) {
         Span entrySpan = NewTrackManager.createEntrySpan(objects);
         NewTrackManager.doRefreshSpan(target, method, objects, entrySpan);
-        
+
         String format = new DmlFormatter().format(sql);
         List<String> stack = new LinkedList<>();
         stack.add(format);
-        
+
         entrySpan.setFrom(currentDb);
         entrySpan.setDescription(sql);
         entrySpan.setTips(stack);
-        entrySpan.setMethod(method.getName());
+        entrySpan.setMethod(method != null ? method.getName() : "fillSendPacket");
         entrySpan.setCategory("SQL");
         entrySpan.setProtocol("MYSQL");
 
@@ -168,9 +211,6 @@ public class MysqlPlugin extends BytebuddyPlugin {
 
     /**
      * 当前数据库
-     *
-     * @param cls 连接
-     * @return 数据库
      */
     private static String getCurrentDb(Object cls) {
         String result = FastMethodHelper.invokeString(cls, "getCurrentDatabase");
@@ -178,30 +218,23 @@ public class MysqlPlugin extends BytebuddyPlugin {
     }
 
     /**
-     * 获取sql
-     *
-     * @param cls 对象
-     * @return sql
+     * 获取SQL
      */
     public static String getSql(Object cls) {
         String result = FastMethodHelper.invokeString(cls, "asSql");
         return result != null ? result : "";
     }
 
-    @Override
-    public String name() {
-        return "Mysql";
-    }
-
-    @Override
-    public DynamicType.Builder.MethodDefinition.ReceiverTypeDefinition<?> transform(DynamicType.Builder<?> builder) {
-        return builder.method(ElementMatchers.named("fillSendPacket")
-                        .and(ElementMatchers.takesArgument(0, ElementMatchers.named("com.mysql.cj.QueryBindings"))))
-                .intercept(MethodDelegation.to(MysqlPlugin.class));
-    }
-
-    @Override
-    public ElementMatcher<? super TypeDescription> type() {
-        return ElementMatchers.named("com.mysql.cj.AbstractPreparedQuery");
+    /**
+     * 从目标对象查找方法
+     */
+    private Method findMethod(Object target, String methodName, Object[] args) {
+        if (target == null) return null;
+        for (Method m : target.getClass().getMethods()) {
+            if (m.getName().equals(methodName)) {
+                return m;
+            }
+        }
+        return null;
     }
 }

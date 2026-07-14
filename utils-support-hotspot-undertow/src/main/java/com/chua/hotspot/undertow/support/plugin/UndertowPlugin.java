@@ -3,47 +3,26 @@ package com.chua.hotspot.undertow.support.plugin;
 import com.chua.hotspot.core.support.http.HttpInterceptHelper;
 import com.chua.hotspot.core.support.http.HttpInterceptHelper.HttpContext;
 import com.chua.hotspot.core.support.plugin.BytebuddyPlugin;
+import net.bytebuddy.description.method.MethodDescription;
 import net.bytebuddy.description.type.TypeDescription;
-import net.bytebuddy.dynamic.DynamicType;
-import net.bytebuddy.implementation.MethodDelegation;
-import net.bytebuddy.implementation.bind.annotation.*;
 import net.bytebuddy.matcher.ElementMatcher;
 import net.bytebuddy.matcher.ElementMatchers;
 
 import java.lang.reflect.Method;
-import java.util.concurrent.Callable;
 
 /**
  * Undertow HTTP 请求拦截插件
  * <p>
- * 拦截 ServletInitialHandler.handleRequest 方法，实现 HTTP 请求的链路追踪和性能监控
+ * 拦截 ServletInitialHandler.handleRequest 方法，实现 HTTP 请求的链路追踪和性能监控。
+ * 使用 Advice + Spy 模式，避免 MethodDelegation 的 ClassLoader 可见性问题。
  * </p>
  *
  * @author CH
- * @version 4.0.0.38
+ * @version 4.0.0.40
  */
 public class UndertowPlugin extends BytebuddyPlugin {
 
     private static final String CATEGORY = "undertow";
-
-    @RuntimeType
-    public static Object intercept(
-            @This Object target,
-            @Origin Method method,
-            @AllArguments Object[] objects,
-            @Super Object delegate,
-            @SuperCall Callable<?> callable) throws Exception {
-        
-        HttpContext ctx = HttpInterceptHelper.before(method, objects, target, CATEGORY, HttpInterceptHelper.UNDERTOW);
-        try {
-            return callable.call();
-        } catch (Exception e) {
-            HttpInterceptHelper.markError(ctx);
-            throw e;
-        } finally {
-            HttpInterceptHelper.after(ctx, objects);
-        }
-    }
 
     @Override
     public String name() {
@@ -51,13 +30,79 @@ public class UndertowPlugin extends BytebuddyPlugin {
     }
 
     @Override
-    public DynamicType.Builder.MethodDefinition.ReceiverTypeDefinition<?> transform(DynamicType.Builder<?> builder) {
-        return builder.method(ElementMatchers.named("handleRequest")).intercept(MethodDelegation.to(UndertowPlugin.class));
+    public ElementMatcher<? super TypeDescription> type() {
+        return ElementMatchers.named("io.undertow.servlet.handlers.ServletInitialHandler");
     }
 
     @Override
-    public ElementMatcher<? super TypeDescription> type() {
-        // 拦截 Undertow 的 ServletInitialHandler，这是 Servlet 请求的入口点
-        return ElementMatchers.named("io.undertow.servlet.handlers.ServletInitialHandler");
+    public ElementMatcher<? super MethodDescription> methodMatcher() {
+        return ElementMatchers.named("handleRequest");
+    }
+
+    @Override
+    public boolean useLegacyMethodDelegation() {
+        return false;
+    }
+
+    @Override
+    public void spyBefore(String className, String methodName, Object target, Object[] args) {
+        super.spyBefore(className, methodName, target, args);
+        try {
+            Method method = findMethod(target, methodName, args);
+            HttpContext ctx = HttpInterceptHelper.before(method, args, target, CATEGORY, HttpInterceptHelper.UNDERTOW);
+            if (ctx != null) {
+                SpyContext spyCtx = getSpyContext();
+                if (spyCtx != null) {
+                    spyCtx.span = ctx.span;
+                    spyCtx.args = new Object[]{ctx};
+                }
+            }
+        } catch (Exception e) {
+            // 忽略拦截异常，不影响目标方法执行
+        }
+    }
+
+    @Override
+    public void spyAfter(String className, String methodName, Object target, Object[] args, Object result) {
+        try {
+            SpyContext spyCtx = getSpyContext();
+            if (spyCtx != null && spyCtx.args != null && spyCtx.args.length > 0
+                    && spyCtx.args[0] instanceof HttpContext) {
+                HttpContext ctx = (HttpContext) spyCtx.args[0];
+                HttpInterceptHelper.after(ctx, args);
+            }
+        } catch (Exception e) {
+            // 忽略拦截异常
+        }
+        super.spyAfter(className, methodName, target, args, result);
+    }
+
+    @Override
+    public void spyError(String className, String methodName, Object target, Object[] args, Throwable throwable) {
+        try {
+            SpyContext spyCtx = getSpyContext();
+            if (spyCtx != null && spyCtx.args != null && spyCtx.args.length > 0
+                    && spyCtx.args[0] instanceof HttpContext) {
+                HttpContext ctx = (HttpContext) spyCtx.args[0];
+                HttpInterceptHelper.markError(ctx);
+                HttpInterceptHelper.after(ctx, args);
+            }
+        } catch (Exception e) {
+            // 忽略拦截异常
+        }
+        super.spyError(className, methodName, target, args, throwable);
+    }
+
+    /**
+     * 从目标对象查找方法
+     */
+    private Method findMethod(Object target, String methodName, Object[] args) {
+        if (target == null) return null;
+        for (Method m : target.getClass().getMethods()) {
+            if (m.getName().equals(methodName)) {
+                return m;
+            }
+        }
+        return null;
     }
 }

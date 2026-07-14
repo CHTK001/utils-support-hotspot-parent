@@ -92,6 +92,9 @@ public class SpyHandlerImpl implements SpyHandler {
 
     @Override
     public void onBefore(String className, String methodName, Object target, Object[] args) {
+        if (className.contains("StandardHostValve")) {
+            logFactory.info("Spy onBefore called for StandardHostValve");
+        }
         BytebuddyPlugin plugin = findPlugin(className);
         if (plugin != null) {
             try {
@@ -200,7 +203,8 @@ public class SpyHandlerImpl implements SpyHandler {
                 return className.contains("RealCall");
             case "Tomcat9x":
             case "Tomcat10x":
-                return className.contains("CoyoteAdapter");
+            case "Tomcat":
+                return className.contains("CoyoteAdapter") || className.contains("StandardHostValve");
             case "Jetty":
                 return className.contains("HttpChannel");
             case "Undertow":

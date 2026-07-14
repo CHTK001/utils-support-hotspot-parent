@@ -103,16 +103,50 @@ public class ServerFactory {
         // 启动统一数据推送器（JVM/System/QPS 等）
         DataPusher.getInstance().start();
 
-        // 创建并启动 HTTP 服务器
-        httpServer = new HttpServer(host, httpPort);
-        ApiRegistry.getInstance().bindToServer(httpServer);
-        httpServer.start();
-        LogFactory.getInstance().info("HTTP 服务器启动成功: {}:{}", host, httpPort);
+        // 创建并启动 HTTP 服务器（端口冲突时自动递增）
+        int actualHttpPort = httpPort;
+        int maxRetries = 10;
+        for (int i = 0; i < maxRetries; i++) {
+            try {
+                httpServer = new HttpServer(host, actualHttpPort);
+                ApiRegistry.getInstance().bindToServer(httpServer);
+                httpServer.start();
+                LogFactory.getInstance().info("HTTP 服务器启动成功: {}:{}", host, actualHttpPort);
+                break;
+            } catch (Exception e) {
+                if (isPortConflictException(e)) {
+                    LogFactory.getInstance().warn("HTTP 端口 {} 已被占用，尝试端口 {}", actualHttpPort, actualHttpPort + 1);
+                    actualHttpPort++;
+                    if (i == maxRetries - 1) {
+                        throw new RuntimeException("HTTP 服务器启动失败：端口 " + httpPort + "-" + actualHttpPort + " 均被占用", e);
+                    }
+                } else {
+                    throw e;
+                }
+            }
+        }
 
-        // 创建并启动 WebSocket 服务器
-        webSocketServer = new WebsocketServer(wsPort);
-        webSocketServer.start();
-        LogFactory.getInstance().info("WebSocket 服务器启动成功: {}:{}", host, wsPort);
+        // WebSocket 端口跟随 HTTP 端口偏移
+        int actualWsPort = wsPort + (actualHttpPort - httpPort);
+        // 创建并启动 WebSocket 服务器（端口冲突时自动递增）
+        for (int i = 0; i < maxRetries; i++) {
+            try {
+                webSocketServer = new WebsocketServer(actualWsPort);
+                webSocketServer.start();
+                LogFactory.getInstance().info("WebSocket 服务器启动成功: {}:{}", host, actualWsPort);
+                break;
+            } catch (Exception e) {
+                if (isPortConflictException(e)) {
+                    LogFactory.getInstance().warn("WebSocket 端口 {} 已被占用，尝试端口 {}", actualWsPort, actualWsPort + 1);
+                    actualWsPort++;
+                    if (i == maxRetries - 1) {
+                        throw new RuntimeException("WebSocket 服务器启动失败：端口 " + wsPort + "-" + actualWsPort + " 均被占用", e);
+                    }
+                } else {
+                    throw e;
+                }
+            }
+        }
 
         // 启动配置文件热更新监视器
         startConfigWatcher();
@@ -262,5 +296,41 @@ public class ServerFactory {
      */
     public boolean isInitialized() {
         return initialized;
+    }
+
+    /**
+     * 获取 HTTP 端口
+     *
+     * @return HTTP 端口，未初始化时返回 0
+     */
+    public int getHttpPort() {
+        return httpServer != null ? httpServer.getPort() : 0;
+    }
+
+    /**
+     * 检查异常是否为端口冲突异常
+     * <p>
+     * HttpServer.start() 会将 IOException 包装为 RuntimeException，
+     * 因此需要遍历 cause 链来检测 BindException
+     * </p>
+     *
+     * @param e 异常
+     * @return 是否为端口冲突异常
+     */
+    private boolean isPortConflictException(Throwable e) {
+        Throwable current = e;
+        while (current != null) {
+            if (current instanceof java.net.BindException) {
+                return true;
+            }
+            if (current.getMessage() != null) {
+                String msg = current.getMessage();
+                if (msg.contains("Address already in use") || msg.contains("Already bound") || msg.contains("BindException")) {
+                    return true;
+                }
+            }
+            current = current.getCause();
+        }
+        return false;
     }
 }
