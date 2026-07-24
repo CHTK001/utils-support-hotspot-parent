@@ -6,7 +6,7 @@
     <parent>
         <groupId>com.chua</groupId>
         <artifactId>utils-support-hotspot-parent</artifactId>
-        <version>4.0.0.33</version>
+        <version>4.0.0.42</version>
     </parent>
 
     <artifactId>utils-support-hotspot-tomcat10x</artifactId>
@@ -40,7 +40,7 @@
         <dependency>
             <groupId>com.chua</groupId>
             <artifactId>utils-support-hotspot-tomcat9x</artifactId>
-            <version>4.0.0.33</version>
+            <version>4.0.0.42</version>
         </dependency>
         <dependency>
             <groupId>org.apache.tomcat.embed</groupId>
@@ -51,7 +51,7 @@
         <dependency>
             <groupId>com.chua</groupId>
             <artifactId>utils-support-hotspot-core</artifactId>
-            <version>4.0.0.33</version>
+            <version>4.0.0.42</version>
         </dependency>
     </dependencies>
 

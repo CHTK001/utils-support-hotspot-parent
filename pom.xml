@@ -39,7 +39,7 @@
     <groupId>com.chua</groupId>
     <artifactId>utils-support-hotspot-parent</artifactId>
     <packaging>pom</packaging>
-    <version>4.0.0.33</version>
+    <version>4.0.0.42</version>
 
     <!-- 子模块列表：各种热点监控组件 -->
     <modules>
@@ -225,18 +225,14 @@
     </build>
 
     <!-- 分发管理：配置Maven仓库发布地址 -->
-    <distributionManagement>
-        <!-- 正式版本发布仓库 -->
+<distributionManagement>
         <repository>
-            <id>boren001</id>
-            <name>boren001</name>
-            <url>http://192.168.110.100:8081/repository/maven-releases/</url>
+            <id>2676178-release-jmLEdB</id>
+            <url>https://packages.aliyun.com/6a62fa1d287d37b037a68ee8/maven/2676178-release-jmledb</url>
         </repository>
         <snapshotRepository>
-            <id>boren001</id>
-            <name>boren001</name>
-            <url>http://192.168.110.100:8081/repository/maven-releases/</url>
+            <id>2676178-snapshot-FwAJpk</id>
+            <url>https://packages.aliyun.com/6a62fa1d287d37b037a68ee8/maven/2676178-snapshot-fwajpk</url>
         </snapshotRepository>
     </distributionManagement>
-
 </project>

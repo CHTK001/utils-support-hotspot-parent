@@ -36,7 +36,7 @@
     <parent>
         <groupId>com.chua</groupId>
         <artifactId>utils-support-hotspot-parent</artifactId>
-        <version>4.0.0.33</version>
+        <version>4.0.0.42</version>
     </parent>
 
     <!-- 模块标识 -->
@@ -69,7 +69,7 @@
         <dependency>
             <groupId>com.chua</groupId>
             <artifactId>utils-support-hotspot-core</artifactId>
-            <version>4.0.0.33</version>
+            <version>4.0.0.42</version>
         </dependency>
 
         <!-- Spring Data Redis：Spring Redis集成 -->
