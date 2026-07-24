@@ -4,7 +4,6 @@ import com.chua.hotspot.core.support.agent.transform.TransformFactory;
 import com.chua.hotspot.core.support.agent.transform.VersionTransform;
 import com.chua.hotspot.core.support.inst.InstrumentationFactory;
 import com.chua.hotspot.core.support.log.LogFactory;
-import com.chua.hotspot.core.support.monitor.AgentSelfMonitor;
 import com.chua.hotspot.core.support.plugin.BytebuddyPlugin;
 import com.chua.hotspot.core.support.plugin.Plugin;
 import com.chua.hotspot.core.support.plugin.PluginFactory;
@@ -13,13 +12,9 @@ import com.chua.hotspot.core.support.spy.SpyHandlerImpl;
 import com.chua.hotspot.core.support.transform.Listener;
 import net.bytebuddy.agent.builder.AgentBuilder;
 import net.bytebuddy.asm.Advice;
-import net.bytebuddy.description.method.MethodDescription;
 import net.bytebuddy.description.type.TypeDescription;
 import net.bytebuddy.dynamic.DynamicType;
-import net.bytebuddy.implementation.MethodDelegation;
-import net.bytebuddy.matcher.ElementMatcher;
 import net.bytebuddy.matcher.ElementMatchers;
-import net.bytebuddy.utility.JavaModule;
 
 import java.io.File;
 import java.security.ProtectionDomain;
@@ -27,7 +22,6 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.RandomAccessFile;
 import java.nio.channels.FileChannel;
-import java.nio.file.Path;
 import java.util.zip.ZipFile;
 
 import static net.bytebuddy.matcher.ElementMatchers.*;
@@ -130,9 +124,6 @@ public class AgentFactory {
         // 3. 合并 ByteBuddy 文件句柄监控
         transform = installFileHandleMonitor(builder, transform);
 
-        // 3.5 直接插入 Tomcat StandardHostValve 截抦（临时解决方案）
-        transform = installTomcatDirectAdvice(builder, transform);
-
         if (null == transform) {
             return;
         }
@@ -219,61 +210,6 @@ public class AgentFactory {
 
 
 
-    /**
-     * 直接安装 Tomcat StandardHostValve 截抦 Advice
-     */
-    private AgentBuilder.Identified.Extendable installTomcatDirectAdvice(
-            AgentBuilder builder,
-            AgentBuilder.Identified.Extendable transform) {
-        try {
-            ElementMatcher<? super TypeDescription> typeMatcher = ElementMatchers.named("org.apache.catalina.core.StandardHostValve");
-            ElementMatcher<? super MethodDescription> methodMatcher = ElementMatchers.named("invoke");
-            
-            AgentBuilder.Transformer transformer = new AgentBuilder.Transformer() {
-                @Override
-                public DynamicType.Builder<?> transform(DynamicType.Builder<?> builder,
-                                                         TypeDescription typeDescription,
-                                                         ClassLoader classLoader,
-                                                         JavaModule module,
-                                                         ProtectionDomain protectionDomain) {
-                    return builder
-                            .visit(Advice.to(TomcatDirectAdvice.class).on(methodMatcher));
-                }
-            };
-            
-            AgentBuilder.Identified.Extendable newTransform = builder
-                    .type(typeMatcher)
-                    .transform(transformer);
-            
-            logFactory.info("安装 Tomcat 直接 Advice 截抦");
-            return transform == null ? newTransform : transform.type(typeMatcher).transform(transformer);
-        } catch (Throwable e) {
-            logFactory.warn("Tomcat 直接 Advice 安装失败: {}", e.getMessage());
-            return transform;
-        }
-    }
-
-    /**
-     * Tomcat 直接 Advice - 用于记录 QPS
-     */
-    public static class TomcatDirectAdvice {
-        @Advice.OnMethodEnter
-        public static void enter(@Advice.Origin("#t") String className) {
-            // 直接调用 ContainerQpsRecorder
-            try {
-                com.chua.hotspot.core.support.recorder.ContainerQpsRecorder.getInstance()
-                        .recordRequestStart("TOMCAT");
-            } catch (Throwable ignored) {}
-        }
-
-        @Advice.OnMethodExit
-        public static void exit() {
-            try {
-                com.chua.hotspot.core.support.recorder.ContainerQpsRecorder.getInstance()
-                        .recordRequestEnd("TOMCAT");
-            } catch (Throwable ignored) {}
-        }
-    }
     private AgentBuilder.Identified.Extendable installFileHandleMonitor(
             AgentBuilder builder, AgentBuilder.Identified.Extendable transform) {
         try {
@@ -381,6 +317,9 @@ public class AgentFactory {
 
     // ==================== Advice 类定义 ====================
 
+    /**
+     * FileInputStream 打开通知
+     */
     public static class FileInputStreamOpenAdvice {
         @Advice.OnMethodExit(suppress = Throwable.class)
         public static void onExit(@Advice.This Object self, @Advice.Argument(0) File file) {
@@ -388,6 +327,9 @@ public class AgentFactory {
         }
     }
 
+    /**
+     * FileOutputStream 打开通知
+     */
     public static class FileOutputStreamOpenAdvice {
         @Advice.OnMethodExit(suppress = Throwable.class)
         public static void onExit(@Advice.This Object self, @Advice.Argument(0) File file) {
@@ -395,6 +337,9 @@ public class AgentFactory {
         }
     }
 
+    /**
+     * RandomAccessFile 打开通知
+     */
     public static class RandomAccessFileOpenAdvice {
         @Advice.OnMethodExit(suppress = Throwable.class)
         public static void onExit(@Advice.This Object self, @Advice.Argument(0) File file) {
@@ -402,6 +347,9 @@ public class AgentFactory {
         }
     }
 
+    /**
+     * ZipFile 打开通知
+     */
     public static class ZipFileOpenAdvice {
         @Advice.OnMethodExit(suppress = Throwable.class)
         public static void onExit(@Advice.This Object self, @Advice.Argument(0) File file) {
@@ -409,6 +357,9 @@ public class AgentFactory {
         }
     }
 
+    /**
+     * FileChannel 打开通知
+     */
     public static class FileChannelOpenAdvice {
         @Advice.OnMethodExit(suppress = Throwable.class)
         public static void onExit(@Advice.Return FileChannel channel, @Advice.Argument(0) Path path) {
@@ -418,6 +369,9 @@ public class AgentFactory {
         }
     }
 
+    /**
+     * 关闭通知
+     */
     public static class CloseAdvice {
         @Advice.OnMethodEnter(suppress = Throwable.class)
         public static void onEnter(@Advice.This Object self) {
@@ -425,6 +379,9 @@ public class AgentFactory {
         }
     }
 
+    /**
+     * Pipe 打开通知
+     */
     public static class PipeOpenAdvice {
         @Advice.OnMethodExit(suppress = Throwable.class)
         public static void onExit(@Advice.This Object self) {
@@ -432,6 +389,9 @@ public class AgentFactory {
         }
     }
 
+    /**
+     * Selector 打开通知
+     */
     public static class SelectorOpenAdvice {
         @Advice.OnMethodExit(suppress = Throwable.class)
         public static void onExit(@Advice.This Object self) {
@@ -439,6 +399,9 @@ public class AgentFactory {
         }
     }
 
+    /**
+     * Socket 打开通知
+     */
     public static class SocketOpenAdvice {
         @Advice.OnMethodExit(suppress = Throwable.class)
         public static void onExit(@Advice.This Object self) {
@@ -446,6 +409,9 @@ public class AgentFactory {
         }
     }
 
+    /**
+     * SocketChannel 打开通知
+     */
     public static class SocketChannelOpenAdvice {
         @Advice.OnMethodExit(suppress = Throwable.class)
         public static void onExit(@Advice.This Object self) {

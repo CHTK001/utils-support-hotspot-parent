@@ -23,6 +23,11 @@ import java.net.SocketAddress;
 public class NettyPlugin extends BytebuddyPlugin {
 
     @Override
+    public boolean useLegacyMethodDelegation() {
+        return false;
+    }
+
+    @Override
     public String name() {
         return "Netty";
     }

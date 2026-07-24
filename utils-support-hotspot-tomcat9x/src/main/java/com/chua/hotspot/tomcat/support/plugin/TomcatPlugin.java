@@ -59,7 +59,7 @@ public class TomcatPlugin extends BytebuddyPlugin {
                 }
             }
         } catch (Exception e) {
-            // 忽略拦截异常，不影响目标方法执行
+            // spy 回调不得抛出异常，忽略以免影响目标方法
         }
     }
 
@@ -73,7 +73,7 @@ public class TomcatPlugin extends BytebuddyPlugin {
                 HttpInterceptHelper.after(ctx, args);
             }
         } catch (Exception e) {
-            // 忽略拦截异常
+            // spy 回调不得抛出异常，忽略以免影响目标方法
         }
         super.spyAfter(className, methodName, target, args, result);
     }
@@ -89,7 +89,7 @@ public class TomcatPlugin extends BytebuddyPlugin {
                 HttpInterceptHelper.after(ctx, args);
             }
         } catch (Exception e) {
-            // 忽略拦截异常
+            // spy 回调不得抛出异常，忽略以免影响目标方法
         }
         super.spyError(className, methodName, target, args, throwable);
     }

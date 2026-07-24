@@ -1,14 +1,23 @@
-# Utils Support Hotspot Dubbo3x - Dubbo3.x热点监控模块
+# utils-support-hotspot-dubbo3x
 
-Dubbo3.x热点监控模块
+Utils Support Hotspot Dubbo3x - Dubbo3.x热点监控模块
 
-## 功能特性
+        该模块提供专业的功能支持和工具集成。
 
-### 🚀 核心功能
-- 📦 模块化设计：提供完整的功能封装
-- 🔧 易于集成：简单的配置和使用方式
-- 📚 完整文档：详细的使用说明和示例
-- 🛡️ 稳定可靠：经过充分测试的功能实现
+        主要特性：
+        - 🔧 功能完整：提供完整的功能实现
+        - 🚀 性能优化：高性能的实现方案
+        - 🛡️ 稳定可靠：经过充分测试和验证
+        - 📚 文档完善：详细的使用文档和示例
+        - 🔄 易于集成：简单的 API 和配置方式
+
+        适用场景：
+        - 企业级应用开发
+        - 系统集成项目
+        - 工具链构建
+        - 第三方服务集成
+
+---
 
 ## 快速开始
 
@@ -18,28 +27,35 @@ Dubbo3.x热点监控模块
 <dependency>
     <groupId>com.chua</groupId>
     <artifactId>utils-support-hotspot-dubbo3x</artifactId>
-    <version>4.0.0.30</version>
+    <version>${project.version}</version>
 </dependency>
 ```
 
-### 2. 基本使用
+---
 
-```java
-// TODO: 添加使用示例
-```
+## 功能概览
+
+| 类/接口 | 说明 |
+|---------|------|
+| `DubboxxLinkResolver` | DubboxxLinkResolver |
+| `DubboContextPlugin` | Dubbo 3.x 上下文插件 注意：由于 Dubbo 2.x 和 3.x 使用不同的 LinkResolver，无法继承 |
+| `DubboRequestPlugin` | Dubbo 3.x 请求拦截插件 拦截 AbstractClusterInvoker.invokeWithContext 方法，用于链路追踪 @version  |
+| `DubboResponsePlugin` | Dubbo 3.x 响应插件 注意：由于 Dubbo 2.x 和 3.x 使用不同的 LinkResolver，无法继承 |
+| `PluginRegistration` | Dubbo3x 插件注册 |
+| `DubboRequestWrapper` | DubboRequestWrapper |
+| `ReflectionDubboRequestWrapper` | ReflectionDubboRequestWrapper |
+
+---
 
 ## 配置说明
 
-```properties
-# TODO: 添加配置说明
+本模块为零配置模块，引入依赖后即可使用。
+
+---
+
+## 依赖关系
+
 ```
-
-## 注意事项
-
-1. **环境要求**: Java 21+
-2. **依赖管理**: 确保相关依赖版本兼容
-3. **性能优化**: 根据实际需求调整配置参数
-
-## 许可证
-
-本项目采用 Apache License 2.0 许可证。
+utils-support-hotspot-dubbo3x
+├── utils-support-hotspot-core
+```

@@ -74,7 +74,7 @@ public class MysqlPlugin extends BytebuddyPlugin {
                 spyCtx.span = span;
             }
         } catch (Exception e) {
-            // 忽略拦截异常，不影响目标方法执行
+            // 忽略，非关键异常
         }
     }
 
@@ -97,7 +97,7 @@ public class MysqlPlugin extends BytebuddyPlugin {
                 }
             }
         } catch (Exception e) {
-            // 忽略拦截异常
+            // 忽略，非关键异常
         }
         super.spyAfter(className, methodName, target, args, result);
     }
@@ -122,7 +122,7 @@ public class MysqlPlugin extends BytebuddyPlugin {
                 }
             }
         } catch (Exception e) {
-            // 忽略拦截异常
+            // 忽略，非关键异常
         }
         super.spyError(className, methodName, target, args, throwable);
     }
@@ -135,7 +135,8 @@ public class MysqlPlugin extends BytebuddyPlugin {
             String fullAddress = address + "/" + database;
             Method method = findMethod(target, methodName, objects);
             return createSpan(target, database, method, sql, fullAddress, objects);
-        } catch (Exception ignored) {
+        } catch (Exception e) {
+            // 忽略，非关键异常
         }
         return null;
     }
@@ -150,7 +151,8 @@ public class MysqlPlugin extends BytebuddyPlugin {
             ss.setTargetHost(netAddress.getHost());
             ss.setTargetPort(netAddress.getPort());
             ReportFactory.sendServiceInstance(ss);
-        } catch (Exception ignored) {
+        } catch (Exception e) {
+            // 忽略，非关键异常
         }
     }
 
@@ -175,7 +177,8 @@ public class MysqlPlugin extends BytebuddyPlugin {
 
             cacheAddress.put(session, host + ":" + port);
             return host + ":" + port;
-        } catch (Exception ignored) {
+        } catch (Exception e) {
+            // 忽略，非关键异常
         }
         return null;
     }

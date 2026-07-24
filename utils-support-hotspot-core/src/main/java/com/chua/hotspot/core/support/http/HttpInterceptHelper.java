@@ -61,7 +61,8 @@ public class HttpInterceptHelper {
             String ct = category.toUpperCase();
             ctx.containerType = ct;
             ContainerQpsRecorder.getInstance().recordRequestStart(ct);
-        } catch (Exception ignored) {
+        } catch (Exception e) {
+            // 忽略，非关键异常
         }
         
         // 创建 Span
@@ -79,7 +80,8 @@ public class HttpInterceptHelper {
                 String mappingId = ctx.httpMethod + "#" + ctx.url;
                 MappingQpsRecorder.getInstance().recordRequestStart(mappingId, ctx.url, ctx.httpMethod, category);
             }
-        } catch (Exception ignored) {
+        } catch (Exception e) {
+            // 忽略，非关键异常
         }
         
         return ctx;
@@ -101,7 +103,8 @@ public class HttpInterceptHelper {
             if (ct != null) {
                 ContainerQpsRecorder.getInstance().recordRequestEnd(ct);
             }
-        } catch (Exception ignored) {
+        } catch (Exception e) {
+            // 忽略，非关键异常
         }
         
         // 上报拦截耗时到 AgentSelfMonitor
@@ -115,7 +118,8 @@ public class HttpInterceptHelper {
                 long duration = System.currentTimeMillis() - ctx.startTime;
                 MappingQpsRecorder.getInstance().recordRequestEnd(mappingId, duration, ctx.hasError);
             }
-        } catch (Exception ignored) {
+        } catch (Exception e) {
+            // 忽略，非关键异常
         }
         
         TraceHelper.afterRequest(ctx.span, args);

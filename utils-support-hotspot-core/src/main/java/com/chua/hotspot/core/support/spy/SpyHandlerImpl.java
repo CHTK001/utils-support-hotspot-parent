@@ -92,9 +92,6 @@ public class SpyHandlerImpl implements SpyHandler {
 
     @Override
     public void onBefore(String className, String methodName, Object target, Object[] args) {
-        if (className.contains("StandardHostValve")) {
-            logFactory.info("Spy onBefore called for StandardHostValve");
-        }
         BytebuddyPlugin plugin = findPlugin(className);
         if (plugin != null) {
             try {

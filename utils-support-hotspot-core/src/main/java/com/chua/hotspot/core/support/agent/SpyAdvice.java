@@ -10,6 +10,12 @@ import net.bytebuddy.implementation.bytecode.assign.Assigner;
  * 由 ByteBuddy Advice 内联到目标方法中，调用 Spy 桥接类的静态方法。
  * 内联后的字节码只引用 Bootstrap CL 中的 Spy.class，不引用任何 agent/core 类。
  * </p>
+ * <p>
+ * <b>重要：</b>此类中的 Advice 方法代码会被 ByteBuddy 内联到目标类中，
+ * 因此只能引用 Bootstrap ClassLoader 可见的类（如 Spy.class）。
+ * 绝对不能引用 plugin ClassLoader 中的类（如 LogFactory、SLF4J 等），
+ * 否则目标类的 ClassLoader 无法加载这些类，导致 NoClassDefFoundError。
+ * </p>
  *
  * @author CH
  * @since 4.0.0.37
@@ -26,9 +32,6 @@ public class SpyAdvice {
                 @Advice.Origin("#m") String methodName,
                 @Advice.This(optional = true, readOnly = true) Object target,
                 @Advice.AllArguments Object[] args) {
-            if (className.contains("StandardHostValve")) {
-                System.out.println("[SPY] SpyAdvice.Enter: " + className + "." + methodName);
-            }
             Spy.before(className, methodName, target, args);
         }
     }

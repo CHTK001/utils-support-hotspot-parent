@@ -1,6 +1,6 @@
-# utils-support-hotspot-jackson
+# utils-support-hotspot-tomcat10x
 
-Utils Support Hotspot Jackson - Jackson热点监控模块
+Utils Support Hotspot Tomcat10x - Tomcat 10.x热点监控模块
 
         该模块提供专业的功能支持和工具集成。
 
@@ -26,7 +26,7 @@ Utils Support Hotspot Jackson - Jackson热点监控模块
 ```xml
 <dependency>
     <groupId>com.chua</groupId>
-    <artifactId>utils-support-hotspot-jackson</artifactId>
+    <artifactId>utils-support-hotspot-tomcat10x</artifactId>
     <version>${project.version}</version>
 </dependency>
 ```
@@ -37,8 +37,10 @@ Utils Support Hotspot Jackson - Jackson热点监控模块
 
 | 类/接口 | 说明 |
 |---------|------|
-| `JacksonPlugin` | jackson插件 |
-| `PluginRegistration` | Jackson 插件注册 |
+| `TomcatLinkResolver` | Tomcat 10.x 链路解析器 通过反射支持 Tomcat 内部类和标准 Servlet API @version 4.0.0.38 |
+| `TomcatPlugin` | Tomcat 10.x HTTP 请求链路追踪插件 继承自 Tomcat 9.x 插件，Tomcat 10.x 的 API 与 9.x 完全兼容， 因此直接继承 |
+| `PluginRegistration` | Tomcat 插件注册 |
+| `TomcatTransfer` | Tomcat 10.x 数据传输器 用于处理 Tomcat 10.x 环境下的请求和响应数据 @version 4.0.0.34 |
 
 ---
 
@@ -51,6 +53,7 @@ Utils Support Hotspot Jackson - Jackson热点监控模块
 ## 依赖关系
 
 ```
-utils-support-hotspot-jackson
+utils-support-hotspot-tomcat10x
+├── utils-support-hotspot-tomcat9x
 ├── utils-support-hotspot-core
 ```
