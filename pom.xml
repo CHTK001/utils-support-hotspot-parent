@@ -28,7 +28,7 @@
     - 支持运行时动态增强
     - 低侵入性监控方案
 
-    版本：4.0.0.33
+    版本：4.0.0.42
 -->
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"

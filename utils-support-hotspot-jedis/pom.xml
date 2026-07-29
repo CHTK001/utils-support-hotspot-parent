@@ -25,7 +25,7 @@
     - 低性能开销
     - 无侵入性设计
 
-    版本：4.0.0.33
+    版本：4.0.0.42
 -->
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
