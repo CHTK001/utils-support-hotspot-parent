@@ -107,9 +107,12 @@ public class PluginRegistry {
      */
     public static void initialize() {
         ClassLoader classLoader = getPluginClassLoader();
+        LogFactory.getInstance().info("PluginRegistry.initialize 使用 classLoader: {}",
+                classLoader.getClass().getName());
 
         // 1. 尝试 SPI 自动发现
         Set<String> discoveredClasses = discoverPluginsViaSpi(classLoader);
+        LogFactory.getInstance().info("SPI 自动发现 {} 个 plugin", discoveredClasses.size());
 
         if (!discoveredClasses.isEmpty()) {
             // SPI 发现成功
@@ -118,6 +121,7 @@ public class PluginRegistry {
             }
         } else {
             // 2. 兜底：使用硬编码列表
+            LogFactory.getInstance().info("SPI 未发现，使用 fallback 列表（{} 个）", FALLBACK_PLUGIN_CLASS_NAMES.length);
             for (String className : FALLBACK_PLUGIN_CLASS_NAMES) {
                 tryLoadPlugin(className, classLoader);
             }
@@ -191,11 +195,14 @@ public class PluginRegistry {
      */
     private static void tryLoadPlugin(String className, ClassLoader classLoader) {
         try {
-            // initialize=false：仅做 Class.forName 触发 static 块（PluginRegistration 静态初始化）
-            // 不真正初始化 Plugin 类本身——真正的 Plugin 实例化在 AgentFactory 阶段按需进行。
-            Class.forName(className, false, classLoader);
+            // initialize=true：触发 PluginRegistration 类的 static 块，调用 registerPlugin() 注册 Supplier。
+            Class.forName(className, true, classLoader);
+            LogFactory.getInstance().debug("插件注册类加载成功: {} (classLoader={})",
+                    className, classLoader.getClass().getName());
         } catch (ClassNotFoundException e) {
-            // 插件模块不存在或对应 jar 未在 output/plugins/ 中，忽略
+            // 插件模块不存在或对应 jar 未在 output/plugins/ 中，记录 debug 日志便于诊断
+            LogFactory.getInstance().warn("插件注册类找不到: {} (classLoader={})",
+                    className, classLoader.getClass().getName());
         } catch (LinkageError e) {
             // 插件模块存在但其静态初始化失败（依赖缺失等，例如 spring6x 引用 Spring 6 类，
             // 但当前应用是 Spring 5），跳过该插件以避免污染后续插件加载。
@@ -203,6 +210,7 @@ public class PluginRegistry {
                     className, e.getClass().getSimpleName());
         } catch (Exception e) {
             System.err.println("[ERROR] 加载插件注册类失败: " + className + ", " + e.getMessage());
+            e.printStackTrace();
         }
     }
 

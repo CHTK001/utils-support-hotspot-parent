@@ -208,14 +208,13 @@
                         </goals>
                         <configuration>
                             <outputDirectory>${project.build.directory}/libs</outputDirectory>
-                            <excludeGroupIds>com.chua</excludeGroupIds>
+                            <!-- 排除 com.chua（自有 jar）和 org.projectlombok（provided 编译期注解处理器，不应在运行时 classpath） -->
+                            <excludeGroupIds>com.chua,org.projectlombok</excludeGroupIds>
                             <!--
-                                默认排除 provided 范围，避免污染 libs；但需要把 httpclient 系列（被 plugin classloader 反射使用）
-                                显式 include 进来。
-                                复制范围：compile + runtime（核心三方依赖），跳过 test 与 system。
+                                默认行为：复制 compile + runtime 范围，跳过 provided、test、system。
+                                所以 httpclient/httpcore/commons-codec（provided）由 copy-libs-provided 单独处理。
+                                Lombok 属于 provided，通过 excludeGroupIds 排除。
                             -->
-                            <includeScope>compile</includeScope>
-                            <includeArtifactIds>httpclient,httpcore,commons-codec,commons-logging</includeArtifactIds>
                         </configuration>
                     </execution>
                     <!--
@@ -232,6 +231,8 @@
                             <includeGroupIds>org.apache.httpcomponents,commons-codec,commons-logging</includeGroupIds>
                             <includeScope>provided</includeScope>
                             <excludeTransitive>true</excludeTransitive>
+                            <!-- 显式排除 lombok 等不应该被打包到运行时的依赖 -->
+                            <excludeGroupIds>org.projectlombok</excludeGroupIds>
                         </configuration>
                     </execution>
                 </executions>
