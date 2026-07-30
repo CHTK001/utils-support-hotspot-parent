@@ -200,11 +200,14 @@ public class PluginRegistry {
         // 否则只加载 spring5x（或都不加载）。
         if (className.contains(".spring6x.")) {
             String detectedSpring = detectedSpringMajorVersion();
+            LogFactory.getInstance().info("spring6x plugin 跳过检查: className={}, detectedSpring={}",
+                    className, detectedSpring);
             if (detectedSpring != null && !detectedSpring.startsWith("6")) {
                 LogFactory.getInstance().warn("运行时检测到 Spring {}，跳过 spring6x plugin（避免与 spring5x 冲突）",
                         detectedSpring);
                 return;
             }
+            LogFactory.getInstance().warn("加载 spring6x plugin（运行时 Spring={}）", detectedSpring);
         }
 
         try {
@@ -234,18 +237,6 @@ public class PluginRegistry {
      */
     private static String detectedSpringMajorVersion() {
         try {
-            Class<?> springAppClass = Class.forName("org.springframework.boot.SpringApplication", false,
-                    Thread.currentThread().getContextClassLoader());
-            String version = springAppClass.getPackage().getImplementationVersion();
-            if (version == null || version.isEmpty()) {
-                return null;
-            }
-            // version 形如 "2.7.18"、"3.2.5"
-            int firstDot = version.indexOf('.');
-            int majorEnd = firstDot > 0 ? firstDot : version.length();
-            String major = version.substring(0, majorEnd);
-            // Spring 2.x (Boot) -> Spring 5；Spring 3.x (Boot) -> Spring 6
-            // 但我们这里要的是 Spring Framework 主版本，看 spring-core
             Class<?> springCoreClass = Class.forName("org.springframework.core.SpringVersion", false,
                     Thread.currentThread().getContextClassLoader());
             java.lang.reflect.Method m = springCoreClass.getMethod("getVersion");
@@ -254,10 +245,12 @@ public class PluginRegistry {
                 return null;
             }
             String springVersion = v.toString();
+            LogFactory.getInstance().debug("检测到 Spring 版本: {}", springVersion);
             // 形如 "5.3.31"、"6.0.5"
             int dot = springVersion.indexOf('.');
             return dot > 0 ? springVersion.substring(0, dot) : springVersion;
         } catch (Throwable t) {
+            LogFactory.getInstance().debug("检测 Spring 版本异常: {}", t.getMessage());
             return null;
         }
     }
