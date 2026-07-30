@@ -150,6 +150,30 @@
             <version>3.45.0.0</version>
         </dependency>
 
+        <!--
+            HttpClient 4.x：由 httpclient4x/hotswap 模块在 HotspotPluginClassLoader 中通过反射使用
+            （org.apache.http.HttpRequest 等类型不在 compile 时引入，运行时由 plugin classloader 加载）。
+            scope=provided 防止污染 core jar 体积；copy-libs 阶段通过 <includeArtifactIds> 显式复制到 output/libs/。
+        -->
+        <dependency>
+            <groupId>org.apache.httpcomponents</groupId>
+            <artifactId>httpclient</artifactId>
+            <version>4.5.14</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.httpcomponents</groupId>
+            <artifactId>httpcore</artifactId>
+            <version>4.4.16</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>commons-codec</groupId>
+            <artifactId>commons-codec</artifactId>
+            <version>1.16.0</version>
+            <scope>provided</scope>
+        </dependency>
+
 
     </dependencies>
 
@@ -185,7 +209,28 @@
                         <configuration>
                             <outputDirectory>${project.build.directory}/libs</outputDirectory>
                             <excludeGroupIds>com.chua</excludeGroupIds>
-                            <excludeScope>provided</excludeScope>
+                            <!--
+                                默认排除 provided 范围，避免污染 libs；但需要把 httpclient 系列（被 plugin classloader 反射使用）
+                                显式 include 进来。
+                            -->
+                            <includeScope>runtime</includeScope>
+                            <includeArtifactIds>httpclient,httpcore,commons-codec,commons-logging</includeArtifactIds>
+                        </configuration>
+                    </execution>
+                    <!--
+                        单独复制 provided 范围的 httpclient 系列到 libs 目录（plugin classloader 需要它做 instanceof 反射）
+                    -->
+                    <execution>
+                        <id>copy-libs-provided</id>
+                        <phase>prepare-package</phase>
+                        <goals>
+                            <goal>copy-dependencies</goal>
+                        </goals>
+                        <configuration>
+                            <outputDirectory>${project.build.directory}/libs</outputDirectory>
+                            <includeGroupIds>org.apache.httpcomponents,commons-codec,commons-logging</includeGroupIds>
+                            <includeScope>provided</includeScope>
+                            <excludeTransitive>true</excludeTransitive>
                         </configuration>
                     </execution>
                 </executions>

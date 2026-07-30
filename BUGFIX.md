@@ -195,13 +195,11 @@ GET /agent/api/trace?action=history&limit=10
 
 ---
 
-## 6. 后续建议（未在本修复内）
+## 6. 后续建议（已合并 ✓）
 
-1. ✅ ~~升级 ByteBuddy 到 1.17+~~（已在 commit 2 中完成）
-2. **修改 `utils-support-hotspot-core/pom.xml`**：
-   - `<dependency org.apache.httpcomponents:httpclient>4.5.14</dependency>` 设为 `provided`
-   - 让 `copy-libs` 自动复制 httpclient 到 `output/libs/`
-3. **其他 4 个 plugin 模块**（mysql / pgsql / oracle / sqlserver、tomcat9x / 10x、undertow、jetty、netty 等）应同步检查：是否在 HotspotPluginClassLoader 中触发了相同 NoClassDefFoundError
+1. ✅ ~~升级 ByteBuddy 到 1.17+~~（commit 2 完成）
+2. ✅ ~~持久化 httpclient 依赖到 copy-libs~~（commit 3 完成）
+3. **其他 plugin 模块**（mysql / pgsql / oracle / sqlserver、tomcat9x / 10x、undertow、jetty、netty 等）应同步检查：是否在 HotspotPluginClassLoader 中触发了相同 NoClassDefFoundError
 4. **`AgentListener` / `SpyHandlerImpl`** 把 `debug()` 改 `warn()` 是有副作用的——目前每次类增强失败都打 WARN，会污染生产日志。后续应改成由 `data.recorder.log.level` 控制
 5. **ByteBuddy 1.18.x 已发布**（2026-07-02 最新 1.18.11），如有需要可继续升级
 
@@ -216,7 +214,7 @@ GET /agent/api/trace?action=history&limit=10
 | `utils-support-hotspot-core/src/main/java/com/chua/hotspot/core/support/span/NewTrackManager.java` | +13/-8：createEntrySpan 顺序修正 |
 | `utils-support-hotspot-httpclient4x/src/main/java/com/chua/hotspot/httpclient4x/support/plugin/HttpClient4xPlugin.java` | +67/-29：instanceof 改反射 + TraceHelper.before/afterRequest 调用 |
 | `pom.xml` | +2/-2：`<bytebuddy.version>1.17.8</bytebuddy.version>`，3 个 byte-buddy 依赖引用 property |
-| `utils-support-hotspot-core/pom.xml` | +2/-2：byte-buddy 改用 `${bytebuddy.version}` |
+| `utils-support-hotspot-core/pom.xml` | byte-buddy 改用 `${bytebuddy.version}` + **新增 httpclient/httpcore/commons-codec provided 依赖 + copy-libs-provided execution 自动复制到 output/libs/** |
 | `utils-support-hotspot-profiler/pom.xml` | +2/-2：byte-buddy 改用 `${bytebuddy.version}` |
 
-构建产物：`output/libs/utils-support-hotspot-core-4.0.0.42.jar`、`output/libs/byte-buddy-1.17.8.jar`、`output/libs/byte-buddy-agent-1.17.8.jar`、`output/plugins/utils-support-hotspot-httpclient3x/4x-4.0.0.42.jar`
+构建产物：`output/libs/utils-support-hotspot-core-4.0.0.42.jar`、`output/libs/byte-buddy-1.17.8.jar`、`output/libs/byte-buddy-agent-1.17.8.jar`、`output/libs/httpclient-4.5.14.jar`、`output/libs/httpcore-4.4.16.jar`、`output/libs/commons-codec-1.16.0.jar`、`output/plugins/utils-support-hotspot-httpclient3x/4x-4.0.0.42.jar`
