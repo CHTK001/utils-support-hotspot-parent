@@ -69,6 +69,10 @@ public abstract class BytebuddyPlugin implements Plugin {
         public long startNanos;
         /** Span 对象（用于链路追踪） */
         public Span span;
+        /**
+         * 用户自定义数据（在 spyBefore 与 spyAfter 之间传递的额外数据）
+         */
+        public Object userData;
 
         public SpyContext(String className, String methodName, Object target, Object[] args) {
             this.className = className;
