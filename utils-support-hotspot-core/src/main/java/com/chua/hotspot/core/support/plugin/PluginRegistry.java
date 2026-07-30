@@ -199,15 +199,23 @@ public class PluginRegistry {
         // 仅当运行时实际使用 Spring 6 时（detectedVersions.spring 包含 6.x）才加载 spring6x；
         // 否则只加载 spring5x（或都不加载）。
         if (className.contains(".spring6x.")) {
-            String detectedSpring = detectedSpringMajorVersion();
-            LogFactory.getInstance().info("spring6x plugin 跳过检查: className={}, detectedSpring={}",
-                    className, detectedSpring);
-            if (detectedSpring != null && !detectedSpring.startsWith("6")) {
-                LogFactory.getInstance().warn("运行时检测到 Spring {}，跳过 spring6x plugin（避免与 spring5x 冲突）",
-                        detectedSpring);
+            // 检测 Spring 6 是否在运行时的 classpath 中（通过特有类）
+            // spring6 引入了 jakarta 而不是 javax；通过这个判断 spring6 是否真实存在
+            boolean spring6Available;
+            try {
+                Class.forName("jakarta.servlet.ServletException", false,
+                        Thread.currentThread().getContextClassLoader());
+                spring6Available = true;
+            } catch (Throwable t) {
+                spring6Available = false;
+            }
+            LogFactory.getInstance().info("spring6x plugin 跳过检查: className={}, spring6Available={}",
+                    className, spring6Available);
+            if (!spring6Available) {
+                LogFactory.getInstance().warn("运行时未检测到 jakarta.servlet（Spring 6 特征），跳过 spring6x plugin（避免 NoClassDefFoundError）");
                 return;
             }
-            LogFactory.getInstance().warn("加载 spring6x plugin（运行时 Spring={}）", detectedSpring);
+            LogFactory.getInstance().info("加载 spring6x plugin（运行时检测到 Spring 6 特征 jakarta.servlet）");
         }
 
         try {
@@ -236,23 +244,67 @@ public class PluginRegistry {
      * @return 主版本号字符串（如 "5"、"6"），检测不到返回 null
      */
     private static String detectedSpringMajorVersion() {
+        // 优先通过 spring-core 的 SpringVersion 获取版本
         try {
             Class<?> springCoreClass = Class.forName("org.springframework.core.SpringVersion", false,
                     Thread.currentThread().getContextClassLoader());
             java.lang.reflect.Method m = springCoreClass.getMethod("getVersion");
             Object v = m.invoke(null);
-            if (v == null) {
-                return null;
+            if (v != null) {
+                String springVersion = v.toString();
+                LogFactory.getInstance().info("通过 SpringVersion 检测到 Spring 版本: {}", springVersion);
+                int dot = springVersion.indexOf('.');
+                return dot > 0 ? springVersion.substring(0, dot) : springVersion;
             }
-            String springVersion = v.toString();
-            LogFactory.getInstance().debug("检测到 Spring 版本: {}", springVersion);
-            // 形如 "5.3.31"、"6.0.5"
-            int dot = springVersion.indexOf('.');
-            return dot > 0 ? springVersion.substring(0, dot) : springVersion;
         } catch (Throwable t) {
-            LogFactory.getInstance().debug("检测 Spring 版本异常: {}", t.getMessage());
-            return null;
+            LogFactory.getInstance().debug("SpringVersion 检测失败: {}", t.getMessage());
         }
+
+        // 备选方案：通过 spring-core jar manifest 的 Implementation-Version 字段读取版本
+        try {
+            Class<?> springCoreClass = Class.forName("org.springframework.core.SpringVersion", false,
+                    Thread.currentThread().getContextClassLoader());
+            java.net.URL source = springCoreClass.getProtectionDomain().getCodeSource().getLocation();
+            if (source != null) {
+                java.io.InputStream is = source.openStream();
+                java.util.jar.Manifest mf = new java.util.jar.Manifest(is);
+                is.close();
+                String version = mf.getMainAttributes().getValue("Implementation-Version");
+                if (version != null && !version.isEmpty()) {
+                    LogFactory.getInstance().info("通过 jar manifest 检测到 Spring 版本: {}", version);
+                    int dot = version.indexOf('.');
+                    return dot > 0 ? version.substring(0, dot) : version;
+                }
+            }
+        } catch (Throwable t) {
+            LogFactory.getInstance().debug("Manifest 检测 Spring 版本失败: {}", t.getMessage());
+        }
+
+        // 备选方案：通过字节码指令检测（Spring 6 的 SpringVersion 类相比 Spring 5 有不同常量）
+        try {
+            Class<?> springCoreClass = Class.forName("org.springframework.core.SpringVersion", false,
+                    Thread.currentThread().getContextClassLoader());
+            java.lang.reflect.Field[] fields = springCoreClass.getDeclaredFields();
+            for (java.lang.reflect.Field f : fields) {
+                if (f.getName().toUpperCase().contains("VERSION")) {
+                    f.setAccessible(true);
+                    Object value = f.get(null);
+                    if (value != null) {
+                        String s = value.toString();
+                        if (s.matches("^\\d+\\.\\d+.*")) {
+                            LogFactory.getInstance().info("通过字段检测到 Spring 版本: {}", s);
+                            int dot = s.indexOf('.');
+                            return dot > 0 ? s.substring(0, dot) : s;
+                        }
+                    }
+                }
+            }
+        } catch (Throwable t) {
+            LogFactory.getInstance().debug("字段检测 Spring 版本失败: {}", t.getMessage());
+        }
+
+        LogFactory.getInstance().warn("无法检测 Spring 版本，spring6x plugin 兼容性检查已禁用");
+        return null;
     }
 
     /**

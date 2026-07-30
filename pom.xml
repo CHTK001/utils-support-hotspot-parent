@@ -251,7 +251,9 @@
                                 <mkdir dir="${maven.multiModuleProjectDirectory}/output/java8"/>
 
                                 <!--
-                                    遍历所有子模块：复制 utils-support-hotspot-* 目录下的 target/*.jar 平铺到 output/plugins/
+                                    遍历所有子模块：复制 utils-support-hotspot-* 目录下的 target/*.jar 平铺到 output/libs/ 和 output/plugins/
+                                    output/libs/：放入系统 classloader 可见的路径（解决 bytebuddy MethodDelegation 嵌入类引用问题）
+                                    output/plugins/：放入 HotspotPluginClassLoader 可见的路径（plugin classloader）
                                     排除 utils-support-hotspot-core、utils-support-hotspot-spy（这两个由 core 模块的 copy-to-output 处理）
                                     排除 utils-support-hotspot-test-* 与 utils-support-hotspot-agent（agent 由 java8 profile 自己处理，test-* 不需要）
                                     注意：fileset 提取文件名后配合 mapper type=flatten 平铺到目录
@@ -266,6 +268,23 @@
                                         <exclude name="utils-support-hotspot-ui/target/**"/>
                                     </fileset>
                                     <!-- 平铺：只保留文件名 -->
+                                    <mapper type="flatten"/>
+                                </copy>
+
+                                <!--
+                                    同时复制到 output/libs/，使 plugin 类引用能在应用 classloader 中解析。
+                                    这样当 bytebuddy MethodDelegation.to(plugin.class) 把 plugin 类引用嵌入到目标字节码时，
+                                    应用运行时能通过系统 classloader 找到该 plugin 类（前提：jakarta 兼容性检查通过）。
+                                -->
+                                <copy todir="${maven.multiModuleProjectDirectory}/output/libs" failonerror="false">
+                                    <fileset dir="${maven.multiModuleProjectDirectory}">
+                                        <include name="utils-support-hotspot-*/target/utils-support-hotspot-*-4.0.0.42.jar"/>
+                                        <exclude name="utils-support-hotspot-core/target/**"/>
+                                        <exclude name="utils-support-hotspot-spy/target/**"/>
+                                        <exclude name="utils-support-hotspot-agent/target/**"/>
+                                        <exclude name="utils-support-hotspot-test-*/target/**"/>
+                                        <exclude name="utils-support-hotspot-ui/target/**"/>
+                                    </fileset>
                                     <mapper type="flatten"/>
                                 </copy>
 
