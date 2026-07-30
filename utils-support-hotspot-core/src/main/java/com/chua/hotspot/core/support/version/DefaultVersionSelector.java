@@ -18,7 +18,7 @@ public class DefaultVersionSelector implements VersionSelector {
     @Override
     public List<File> selectJarFiles(File libDir, Map<String, String> detectedVersions) {
         List<File> selectedJars = new ArrayList<>();
-        
+
         if (!libDir.exists() || !libDir.isDirectory()) {
             System.err.println("[WARN] lib 目录不存在: " + libDir.getAbsolutePath());
             return selectedJars;
@@ -29,13 +29,17 @@ public class DefaultVersionSelector implements VersionSelector {
             return selectedJars;
         }
 
+        // 兜底：当应用框架探测失败（detectedVersions 为空或仅含默认值）时，
+        // 跳过版本冲突过滤，全部加载（避免插件全部被过滤掉导致 agent 失效）
+        boolean skipVersionFilter = detectedVersions == null || detectedVersions.isEmpty();
+
         for (File file : files) {
             if (file.isDirectory()) {
                 // 递归处理子目录
                 selectedJars.addAll(selectJarFilesRecursive(file, detectedVersions));
             } else if (file.isFile() && file.getName().toLowerCase().endsWith(".jar")) {
                 // 检查该 JAR 是否应该被加载
-                if (shouldLoadJar(file, detectedVersions)) {
+                if (skipVersionFilter || shouldLoadJar(file, detectedVersions)) {
                     selectedJars.add(file);
                 }
             }
