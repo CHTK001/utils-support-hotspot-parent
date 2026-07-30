@@ -164,6 +164,8 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <!-- Agent主类：Java Agent的premain方法入口 -->
         <premain>com.chua.hotspot.agent.support.Agent</premain>
+        <!-- ByteBuddy：统一版本管理，覆盖父/子模块的不同版本 -->
+        <bytebuddy.version>1.17.8</bytebuddy.version>
     </properties>
 
     <!-- 公共依赖：所有热点监控子模块都会继承 -->
@@ -180,14 +182,14 @@
         <dependency>
             <groupId>net.bytebuddy</groupId>
             <artifactId>byte-buddy</artifactId>
-            <version>1.15.7</version>
+            <version>${bytebuddy.version}</version>
         </dependency>
 
         <!-- ByteBuddy Agent：ByteBuddy的Agent支持库 -->
         <dependency>
             <groupId>net.bytebuddy</groupId>
             <artifactId>byte-buddy-agent</artifactId>
-            <version>1.15.7</version>
+            <version>${bytebuddy.version}</version>
         </dependency>
 
         <!-- Javassist：Java字节码操作工具，用于动态修改类 -->

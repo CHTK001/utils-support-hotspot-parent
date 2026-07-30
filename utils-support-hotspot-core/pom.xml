@@ -56,14 +56,14 @@
         <dependency>
             <groupId>net.bytebuddy</groupId>
             <artifactId>byte-buddy</artifactId>
-            <version>1.14.10</version>
+            <version>${bytebuddy.version}</version>
         </dependency>
 
         <!-- ByteBuddy Agent：Java代理支持 -->
         <dependency>
             <groupId>net.bytebuddy</groupId>
             <artifactId>byte-buddy-agent</artifactId>
-            <version>1.14.10</version>
+            <version>${bytebuddy.version}</version>
         </dependency>
 
         <!-- Javassist：字节码操作库 -->

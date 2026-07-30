@@ -6,6 +6,23 @@
 
 ---
 
+## 0. ByteBuddy 升级（已合并）
+
+| 项目 | 值 |
+|---|---|
+| 原版本 | 父 POM `1.15.7`、core `1.14.10`、profiler `1.14.10`（3 处不一致） |
+| 新版本 | **1.17.8**（统一由 `<bytebuddy.version>` property 管理） |
+| 启动参数 | 不再需要 `-Dnet.bytebuddy.experimental=true` |
+
+变更文件：
+- `pom.xml`：新增 `<bytebuddy.version>1.17.8</bytebuddy.version>`，3 个 byte-buddy 依赖全部用 `${bytebuddy.version}`
+- `utils-support-hotspot-core/pom.xml`：移除 `1.14.10` 硬编码
+- `utils-support-hotspot-profiler/pom.xml`：移除 `1.14.10` 硬编码
+
+验证：tsa(18081)→tsb(18082) 5 次调用，SQLite `trace_records count=5`，tsa/tsb 拥有相同的 5 个 UUID linkId，`transformFailCount=0 / exceptionCount=0`。
+
+---
+
 ## 1. 现象
 
 `utils-support-hotspot-test-springboot-a (18081)` 与 `utils-support-hotspot-test-springboot-b (18082)` 启动后，调
@@ -140,19 +157,15 @@ TraceHelper.afterRequest(span, args);
 
 ---
 
-## 4. 启动方式（验证通过）
+## 4. 启动方式（验证通过，ByteBuddy 1.17.8）
 
 ```bat
 java -javaagent:output\java8\utils-support-hotspot-agent-4.0.0.42-java8.jar ^
-     -Dhotspot.log.level=DEBUG ^
-     -Dnet.bytebuddy.experimental=true ^
-     -Dhotspot_application_name=hotspot-test-service-a ^
      -jar utils-support-hotspot-test-springboot-a\target\utils-support-hotspot-test-springboot-a-4.0.0.42.jar
 ```
 
-**关键参数**：
+**关键参数**（无 `-Dnet.bytebuddy.experimental=true`，由 ByteBuddy 1.17.8 原生支持 Java 25）：
 
-- `-Dnet.bytebuddy.experimental=true`：启用 ByteBuddy 对 Java 25 的实验支持
 - `-Dhotspot_application_name=...`：设置 `applicationName`（SQLite 数据库文件名）
 - `-Dhotspot.lib.path`、`HOTSPOT_LIB_PATH` 可选覆盖 `output/libs/` 路径
 
@@ -184,12 +197,13 @@ GET /agent/api/trace?action=history&limit=10
 
 ## 6. 后续建议（未在本修复内）
 
-1. **升级 ByteBuddy 到 1.17+**（移除 `-Dnet.bytebuddy.experimental` 启动参数）
+1. ✅ ~~升级 ByteBuddy 到 1.17+~~（已在 commit 2 中完成）
 2. **修改 `utils-support-hotspot-core/pom.xml`**：
    - `<dependency org.apache.httpcomponents:httpclient>4.5.14</dependency>` 设为 `provided`
    - 让 `copy-libs` 自动复制 httpclient 到 `output/libs/`
 3. **其他 4 个 plugin 模块**（mysql / pgsql / oracle / sqlserver、tomcat9x / 10x、undertow、jetty、netty 等）应同步检查：是否在 HotspotPluginClassLoader 中触发了相同 NoClassDefFoundError
 4. **`AgentListener` / `SpyHandlerImpl`** 把 `debug()` 改 `warn()` 是有副作用的——目前每次类增强失败都打 WARN，会污染生产日志。后续应改成由 `data.recorder.log.level` 控制
+5. **ByteBuddy 1.18.x 已发布**（2026-07-02 最新 1.18.11），如有需要可继续升级
 
 ---
 
@@ -201,5 +215,8 @@ GET /agent/api/trace?action=history&limit=10
 | `utils-support-hotspot-core/src/main/java/com/chua/hotspot/core/support/spy/SpyHandlerImpl.java` | +9/-6：catch 块改 warn + stack |
 | `utils-support-hotspot-core/src/main/java/com/chua/hotspot/core/support/span/NewTrackManager.java` | +13/-8：createEntrySpan 顺序修正 |
 | `utils-support-hotspot-httpclient4x/src/main/java/com/chua/hotspot/httpclient4x/support/plugin/HttpClient4xPlugin.java` | +67/-29：instanceof 改反射 + TraceHelper.before/afterRequest 调用 |
+| `pom.xml` | +2/-2：`<bytebuddy.version>1.17.8</bytebuddy.version>`，3 个 byte-buddy 依赖引用 property |
+| `utils-support-hotspot-core/pom.xml` | +2/-2：byte-buddy 改用 `${bytebuddy.version}` |
+| `utils-support-hotspot-profiler/pom.xml` | +2/-2：byte-buddy 改用 `${bytebuddy.version}` |
 
-构建产物：`output/libs/utils-support-hotspot-core-4.0.0.42.jar`、`output/plugins/utils-support-hotspot-httpclient3x/4x-4.0.0.42.jar`
+构建产物：`output/libs/utils-support-hotspot-core-4.0.0.42.jar`、`output/libs/byte-buddy-1.17.8.jar`、`output/libs/byte-buddy-agent-1.17.8.jar`、`output/plugins/utils-support-hotspot-httpclient3x/4x-4.0.0.42.jar`
