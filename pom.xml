@@ -251,9 +251,10 @@
                                 <mkdir dir="${maven.multiModuleProjectDirectory}/output/java8"/>
 
                                 <!--
-                                    遍历所有子模块：复制 utils-support-hotspot-* 的 jar 到 output/plugins/
+                                    遍历所有子模块：复制 utils-support-hotspot-* 目录下的 target/*.jar 平铺到 output/plugins/
                                     排除 utils-support-hotspot-core、utils-support-hotspot-spy（这两个由 core 模块的 copy-to-output 处理）
                                     排除 utils-support-hotspot-test-* 与 utils-support-hotspot-agent（agent 由 java8 profile 自己处理，test-* 不需要）
+                                    注意：fileset 提取文件名后配合 mapper type=flatten 平铺到目录
                                 -->
                                 <copy todir="${maven.multiModuleProjectDirectory}/output/plugins" failonerror="false">
                                     <fileset dir="${maven.multiModuleProjectDirectory}">
@@ -264,7 +265,14 @@
                                         <exclude name="utils-support-hotspot-test-*/target/**"/>
                                         <exclude name="utils-support-hotspot-ui/target/**"/>
                                     </fileset>
+                                    <!-- 平铺：只保留文件名 -->
+                                    <mapper type="flatten"/>
                                 </copy>
+
+                                <!-- 清理可能残留的同名目录（防增量构建留下历史 jar） -->
+                                <delete>
+                                    <fileset dir="${maven.multiModuleProjectDirectory}/output/plugins" includes="*-4.0.0.42/"/>
+                                </delete>
 
                                 <echo message="已聚合所有子模块 jar 到: ${maven.multiModuleProjectDirectory}/output/plugins"/>
                             </target>

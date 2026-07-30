@@ -1,6 +1,7 @@
 package com.chua.hotspot.core.support.plugin;
 
 import com.chua.hotspot.core.support.classloader.HotspotPluginClassLoader;
+import com.chua.hotspot.core.support.log.LogFactory;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -60,9 +61,13 @@ public class PluginRegistry {
         "com.chua.hotspot.mybatis.support.PluginRegistration",
         "com.chua.hotspot.p6spy.support.PluginRegistration",
         "com.chua.hotspot.hikaricp.support.PluginRegistration",
-        // Spring 相关（spring5x、spring6x）
+        // Spring 相关（spring5x、spring6x 互斥）
+        // 注意：spring5x 与 spring6x 是互斥的（按运行时检测到的 spring 版本决定加载哪一个）。
+        // spring6x 不加入 fallback 列表——它需要在 output/plugins/ 中显式存在 spring6x.jar 时
+        // 通过 SPI 自动发现机制加载，或在 detectedVersions 包含 spring=6 时由 followUp 阶段加载。
+        // 这样可避免"spring6x.jar 缺失但 fallback 仍尝试加载"导致应用启动 NoClassDefFoundError。
         "com.chua.hotspot.spring.support.PluginRegistration",
-        "com.chua.hotspot.spring6x.support.PluginRegistration",
+        // "com.chua.hotspot.spring6x.support.PluginRegistration",
         // Web 容器相关（tomcat9x、tomcat10x、undertow、jetty）
         "com.chua.hotspot.tomcat9x.support.PluginRegistration",
         "com.chua.hotspot.tomcat10x.support.PluginRegistration",
@@ -186,9 +191,16 @@ public class PluginRegistry {
      */
     private static void tryLoadPlugin(String className, ClassLoader classLoader) {
         try {
-            Class.forName(className, true, classLoader);
+            // initialize=false：仅做 Class.forName 触发 static 块（PluginRegistration 静态初始化）
+            // 不真正初始化 Plugin 类本身——真正的 Plugin 实例化在 AgentFactory 阶段按需进行。
+            Class.forName(className, false, classLoader);
         } catch (ClassNotFoundException e) {
-            // 插件模块不存在，忽略
+            // 插件模块不存在或对应 jar 未在 output/plugins/ 中，忽略
+        } catch (LinkageError e) {
+            // 插件模块存在但其静态初始化失败（依赖缺失等，例如 spring6x 引用 Spring 6 类，
+            // 但当前应用是 Spring 5），跳过该插件以避免污染后续插件加载。
+            LogFactory.getInstance().warn("插件注册类加载失败（依赖缺失），跳过: {} - {}",
+                    className, e.getClass().getSimpleName());
         } catch (Exception e) {
             System.err.println("[ERROR] 加载插件注册类失败: " + className + ", " + e.getMessage());
         }

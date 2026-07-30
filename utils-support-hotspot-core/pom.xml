@@ -212,8 +212,9 @@
                             <!--
                                 默认排除 provided 范围，避免污染 libs；但需要把 httpclient 系列（被 plugin classloader 反射使用）
                                 显式 include 进来。
+                                复制范围：compile + runtime（核心三方依赖），跳过 test 与 system。
                             -->
-                            <includeScope>runtime</includeScope>
+                            <includeScope>compile</includeScope>
                             <includeArtifactIds>httpclient,httpcore,commons-codec,commons-logging</includeArtifactIds>
                         </configuration>
                     </execution>
