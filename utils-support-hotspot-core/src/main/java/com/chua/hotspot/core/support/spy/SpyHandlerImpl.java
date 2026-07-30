@@ -97,8 +97,9 @@ public class SpyHandlerImpl implements SpyHandler {
             try {
                 plugin.spyBefore(className, methodName, target, args);
             } catch (Throwable e) {
-                logFactory.debug("Spy onBefore 回调异常: plugin={}, class={}, method={}, error={}",
-                        plugin.name(), className, methodName, e.getMessage());
+                logFactory.warn("Spy onBefore 回调异常: plugin={}, class={}, method={}, error={}",
+                        plugin.name(), className, methodName, e.toString());
+                logFactory.warn("StackTrace: ", e);
             }
         }
     }
@@ -110,8 +111,9 @@ public class SpyHandlerImpl implements SpyHandler {
             try {
                 plugin.spyAfter(className, methodName, target, args, result);
             } catch (Throwable e) {
-                logFactory.debug("Spy onAfter 回调异常: plugin={}, class={}, method={}, error={}",
-                        plugin.name(), className, methodName, e.getMessage());
+                logFactory.warn("Spy onAfter 回调异常: plugin={}, class={}, method={}, error={}",
+                        plugin.name(), className, methodName, e.toString());
+                logFactory.warn("StackTrace: ", e);
             }
         }
     }
@@ -123,8 +125,9 @@ public class SpyHandlerImpl implements SpyHandler {
             try {
                 plugin.spyError(className, methodName, target, args, throwable);
             } catch (Throwable e) {
-                logFactory.debug("Spy onError 回调异常: plugin={}, class={}, method={}, error={}",
-                        plugin.name(), className, methodName, e.getMessage());
+                logFactory.warn("Spy onError 回调异常: plugin={}, class={}, method={}, error={}",
+                        plugin.name(), className, methodName, e.toString());
+                logFactory.warn("StackTrace: ", e);
             }
         }
     }

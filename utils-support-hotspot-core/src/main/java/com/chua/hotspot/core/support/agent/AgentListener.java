@@ -36,6 +36,15 @@ public class AgentListener implements AgentBuilder.Listener {
             return;
         }
         AgentSelfMonitor.getInstance().recordTransformFail(typeName);
+        // 打印异常详情（受 --add-opens 限制时尤其重要）
+        logFactory.warn("类增强失败: {} - {}", typeName, throwable.toString());
+        Throwable cause = throwable.getCause();
+        int depth = 0;
+        while (cause != null && depth < 5) {
+            logFactory.warn("  caused by: {} - {}", cause.getClass().getName(), cause.getMessage());
+            cause = cause.getCause();
+            depth++;
+        }
     }
 
     @Override

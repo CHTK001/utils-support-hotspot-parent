@@ -7,6 +7,7 @@ import com.chua.hotspot.core.support.plugin.BytebuddyPlugin;
 import com.chua.hotspot.core.support.server.ServiceInstance;
 import com.chua.hotspot.core.support.span.NewTrackManager;
 import com.chua.hotspot.core.support.span.Span;
+import com.chua.hotspot.core.support.trace.TraceHelper;
 import com.chua.hotspot.core.support.utils.HexUtils;
 import org.apache.http.HttpRequest;
 import org.apache.http.HttpEntityEnclosingRequest;
@@ -80,28 +81,53 @@ public class HttpClient4xPlugin extends com.chua.hotspot.httpclient3x.support.pl
 
         try {
             // 检查是否为 doExecute 方法且参数包含 HttpRequest
-            if (!DO_EXECUTE.equals(methodName) || args == null || args.length < 2 || !(args[1] instanceof HttpRequest)) {
+            // 使用 Class.forName 反射判断，避免在 HotspotPluginClassLoader 中触发 org.apache.http.HttpRequest 的类初始化
+            if (!DO_EXECUTE.equals(methodName) || args == null || args.length < 2 || args[1] == null) {
                 return;
             }
-
-            HttpRequest httpRequest = (HttpRequest) args[1];
-            Span exitSpan = NewTrackManager.createEntrySpan(args);
+            Class<?> httpRequestClass;
+            try {
+                httpRequestClass = Class.forName("org.apache.http.HttpRequest", false, args[1].getClass().getClassLoader());
+            } catch (Throwable ignored) {
+                return;
+            }
+            if (!httpRequestClass.isInstance(args[1])) {
+                return;
+            }
+            Object httpRequest = args[1];
+            // 使用 TraceHelper.beforeRequest：自动处理分布式追踪上下文（X-Trace-Id 头继承）
+            java.lang.reflect.Method doExecuteMethod;
+            try {
+                doExecuteMethod = target == null ? null : target.getClass().getMethod("doExecute",
+                        Class.forName("org.apache.http.HttpHost", false, target.getClass().getClassLoader()),
+                        Class.forName("org.apache.http.HttpRequest", false, target.getClass().getClassLoader()),
+                        Class.forName("org.apache.http.protocol.HttpContext", false, target.getClass().getClassLoader()));
+            } catch (Throwable t) {
+                doExecuteMethod = null;
+            }
+            Span exitSpan = TraceHelper.beforeRequest(doExecuteMethod, args, target, "HTTP", "Client");
             String linkId = exitSpan.getLinkId();
             String pid = exitSpan.getId();
 
             if (linkId != null) {
-                httpRequest.addHeader(LINK_ID, linkId);
-                httpRequest.addHeader(LINK_PID, pid);
+                // 通过反射调用 addHeader，避免直接引用 org.apache.http.HttpRequest 接口
+                try {
+                    httpRequestClass.getMethod("addHeader", String.class, String.class).invoke(httpRequest, LINK_ID, linkId);
+                    httpRequestClass.getMethod("addHeader", String.class, String.class).invoke(httpRequest, LINK_PID, pid);
+                } catch (Throwable ignored) {
+                }
 
                 try {
-                    URI uri = new URI(httpRequest.getRequestLine().getUri());
+                    Object requestLine = httpRequestClass.getMethod("getRequestLine").invoke(httpRequest);
+                    String uri = (String) requestLine.getClass().getMethod("getUri").invoke(requestLine);
+                    URI u = new URI(uri);
                     ServiceInstance ss = new ServiceInstance();
                     ss.setName("HTTP4");
                     ss.setSourceName("HOST");
                     ss.setSourceHost(ReportFactory.APP_HOST);
                     ss.setSourcePort(Integer.parseInt(ReportFactory.APP_PORT));
-                    ss.setTargetHost(uri.getHost());
-                    ss.setTargetPort(uri.getPort());
+                    ss.setTargetHost(u.getHost());
+                    ss.setTargetPort(u.getPort());
                     ReportFactory.sendServiceInstance(ss);
                 } catch (Exception ignored) {
                 }
@@ -129,34 +155,53 @@ public class HttpClient4xPlugin extends com.chua.hotspot.httpclient3x.support.pl
             }
 
             Span span = ctx.span;
-            if (span == null || args == null || args.length < 2 || !(args[1] instanceof HttpRequest)) {
+            if (span == null || args == null || args.length < 2) {
                 super.spyAfter(className, methodName, target, args, result);
                 return;
             }
-
-            HttpRequest request = (HttpRequest) args[1];
-            String httpMethodName = request.getRequestLine().getMethod();
-            String uri = request.getRequestLine().getUri();
+            Object request = args[1];
+            Class<?> requestClass = request == null ? null : request.getClass();
+            // 反射获取 request line / headers
+            String httpMethodName = null;
+            String uri = null;
+            try {
+                Object requestLine = requestClass.getMethod("getRequestLine").invoke(request);
+                Object rl = requestLine;
+                httpMethodName = (String) rl.getClass().getMethod("getMethod").invoke(rl);
+                uri = (String) rl.getClass().getMethod("getUri").invoke(rl);
+            } catch (Throwable ignored) {
+            }
+            if (uri == null) {
+                super.spyAfter(className, methodName, target, args, result);
+                return;
+            }
 
             List<String> stack = new LinkedList<>();
             stack.add(uri);
             stack.add("<strong class='node-details__name collapse-handle'>请求头</strong>");
 
-            Header[] allHeaders = request.getAllHeaders();
-            for (Header header : allHeaders) {
-                String s = header.toString();
-                if (s.startsWith("x-request")) {
-                    continue;
+            try {
+                Object[] allHeaders = (Object[]) requestClass.getMethod("getAllHeaders").invoke(request);
+                for (Object header : allHeaders) {
+                    String s = header.toString();
+                    if (s.startsWith("x-request")) {
+                        continue;
+                    }
+                    stack.add(s);
                 }
-                stack.add(s);
+            } catch (Throwable ignored) {
             }
 
             stack.add("<strong class='node-details__name collapse-handle'>请求体</strong>");
             try {
-                if (request instanceof HttpEntityEnclosingRequest) {
-                    HttpEntityEnclosingRequest entityRequest = (HttpEntityEnclosingRequest) request;
-                    if (entityRequest.getEntity() != null) {
-                        stack.add(EntityUtils.toString(entityRequest.getEntity()));
+                Class<?> hecCls = Class.forName("org.apache.http.HttpEntityEnclosingRequest", false, requestClass.getClassLoader());
+                if (hecCls.isInstance(request)) {
+                    Object entity = hecCls.getMethod("getEntity").invoke(request);
+                    if (entity != null) {
+                        Class<?> entityUtilsCls = Class.forName("org.apache.http.util.EntityUtils", false, requestClass.getClassLoader());
+                        String body = (String) entityUtilsCls.getMethod("toString", Class.forName("org.apache.http.HttpEntity", false, requestClass.getClassLoader()))
+                                .invoke(null, entity);
+                        stack.add(body);
                     }
                 }
             } catch (Exception ignored) {
@@ -172,6 +217,9 @@ public class HttpClient4xPlugin extends com.chua.hotspot.httpclient3x.support.pl
 
             // 计算耗时
             NewTrackManager.costTime(span);
+
+            // 持久化 + 推送链路
+            TraceHelper.afterRequest(span, args);
 
             // 从响应中提取跨服务链路信息
             if (null != result) {
