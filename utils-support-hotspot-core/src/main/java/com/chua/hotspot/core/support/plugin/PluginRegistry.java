@@ -194,6 +194,19 @@ public class PluginRegistry {
      * @param classLoader 类加载器
      */
     private static void tryLoadPlugin(String className, ClassLoader classLoader) {
+        // 互斥检查：spring5x 与 spring6x 不能同时加载，否则两个 plugin 会同时增强 SpringApplicationRunListeners
+        // 并在字节码中嵌入对方 plugin 类的直接引用，运行时必然 NoClassDefFoundError。
+        // 仅当运行时实际使用 Spring 6 时（detectedVersions.spring 包含 6.x）才加载 spring6x；
+        // 否则只加载 spring5x（或都不加载）。
+        if (className.contains(".spring6x.")) {
+            String detectedSpring = detectedSpringMajorVersion();
+            if (detectedSpring != null && !detectedSpring.startsWith("6")) {
+                LogFactory.getInstance().warn("运行时检测到 Spring {}，跳过 spring6x plugin（避免与 spring5x 冲突）",
+                        detectedSpring);
+                return;
+            }
+        }
+
         try {
             // initialize=true：触发 PluginRegistration 类的 static 块，调用 registerPlugin() 注册 Supplier。
             Class.forName(className, true, classLoader);
@@ -211,6 +224,41 @@ public class PluginRegistry {
         } catch (Exception e) {
             System.err.println("[ERROR] 加载插件注册类失败: " + className + ", " + e.getMessage());
             e.printStackTrace();
+        }
+    }
+
+    /**
+     * 检测运行时 Spring 主版本号（基于 classpath 中存在的 SpringApplication 类）
+     *
+     * @return 主版本号字符串（如 "5"、"6"），检测不到返回 null
+     */
+    private static String detectedSpringMajorVersion() {
+        try {
+            Class<?> springAppClass = Class.forName("org.springframework.boot.SpringApplication", false,
+                    Thread.currentThread().getContextClassLoader());
+            String version = springAppClass.getPackage().getImplementationVersion();
+            if (version == null || version.isEmpty()) {
+                return null;
+            }
+            // version 形如 "2.7.18"、"3.2.5"
+            int firstDot = version.indexOf('.');
+            int majorEnd = firstDot > 0 ? firstDot : version.length();
+            String major = version.substring(0, majorEnd);
+            // Spring 2.x (Boot) -> Spring 5；Spring 3.x (Boot) -> Spring 6
+            // 但我们这里要的是 Spring Framework 主版本，看 spring-core
+            Class<?> springCoreClass = Class.forName("org.springframework.core.SpringVersion", false,
+                    Thread.currentThread().getContextClassLoader());
+            java.lang.reflect.Method m = springCoreClass.getMethod("getVersion");
+            Object v = m.invoke(null);
+            if (v == null) {
+                return null;
+            }
+            String springVersion = v.toString();
+            // 形如 "5.3.31"、"6.0.5"
+            int dot = springVersion.indexOf('.');
+            return dot > 0 ? springVersion.substring(0, dot) : springVersion;
+        } catch (Throwable t) {
+            return null;
         }
     }
 
