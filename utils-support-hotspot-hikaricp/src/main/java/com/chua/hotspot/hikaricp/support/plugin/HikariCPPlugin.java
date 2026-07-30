@@ -44,11 +44,6 @@ public class HikariCPPlugin extends BytebuddyPlugin {
     }
 
     @Override
-    public boolean matches(String className) {
-        return className.contains("HikariPool") || className.contains("HikariDataSource");
-    }
-
-    @Override
     public ElementMatcher<? super TypeDescription> type() {
         return ElementMatchers.named("com.zaxxer.hikari.pool.HikariPool")
                 .or(ElementMatchers.named("com.zaxxer.hikari.HikariDataSource"));

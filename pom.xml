@@ -73,8 +73,8 @@
         <!-- SQL Server：SQL Server数据库监控 -->
         <module>utils-support-hotspot-sqlserver</module>
         <!-- HikariCP：HikariCP连接池监控 -->
-        <!-- HikariCP：连接池监控（已被 ByteBuddy 替代，编译失败，临时禁用）
-        <module>utils-support-hotspot-hikaricp</module> -->
+        <!-- HikariCP：连接池监控 -->
+        <module>utils-support-hotspot-hikaricp</module>
 
         <!-- Web服务器监控 -->
         <!-- Tomcat9x：Tomcat 9.x容器监控 -->
