@@ -95,6 +95,12 @@ public class Agent {
             // ========== 第1步：注入 Spy 到 Bootstrap ClassLoader ==========
             injectSpyToBootstrap(instrumentation, isAttachMode);
 
+            // ========== 第1.5步：注入 Spring5x/Core/ByteBuddy 到 System ClassLoader ==========
+            // 解决 bytebuddy MethodDelegation 嵌入 plugin 类引用时，Spring Boot 的
+            // LaunchedURLClassLoader 无法通过父委托找到 HotspotPluginClassLoader 中
+            // 的 plugin 类的 NoClassDefFoundError 问题
+            injectSpringPluginsToSystemClassLoader(instrumentation);
+
             // ========== 第2步：创建 HotspotClassLoader ==========
             HotspotClassLoader classLoader = createClassLoader(isAttachMode);
             if (classLoader == null) {
@@ -116,6 +122,61 @@ public class Agent {
             if (!isAttachMode) {
                 throw new RuntimeException("Agent 启动失败", e);
             }
+        }
+    }
+
+    /**
+     * 注入热点插件及其依赖到 System ClassLoader。
+     * <p>
+     * 背景：bytebuddy 的 {@code MethodDelegation.to(SpringApplicationPlugin.class)} 会在生成字节码中
+     * 直接嵌入插件类的引用。Spring Boot 的 {@code LaunchedURLClassLoader} 无法通过父委托找到
+     * {@code HotspotPluginClassLoader} 中加载的插件类，运行时抛出
+     * {@code NoClassDefFoundError: com.chua.hotspot.spring.support.plugin.SpringApplicationPlugin}。
+     * <p>
+     * 解决方案：使用 {@code Instrumentation.appendToSystemClassLoaderSearch} 把插件 jar
+     * （以及其依赖 byte-buddy）追加到 System ClassLoader 的搜索路径，使这些类对
+     * {@code LaunchedURLClassLoader} 通过父委托可见。
+     * <p>
+     * 注入范围：
+     * <ul>
+     *   <li>{@code utils-support-hotspot-spring5x-*.jar} —— Spring 5 插件（增强 SpringApplicationRunListeners）</li>
+     *   <li>{@code utils-support-hotspot-core-*.jar} —— 核心插件基类（BytebuddyPlugin 等）</li>
+     *   <li>{@code byte-buddy-*.jar} —— bytebuddy 运行期（matcher/ElementMatcher 等）</li>
+     * </ul>
+     * 注：byte-buddy-agent 不需要注入（仅用于 ClassFileLocator 自身加载，与 advice 无关）。
+     */
+    private static void injectSpringPluginsToSystemClassLoader(Instrumentation instrumentation) {
+        try {
+            String agentJarPath = getAgentJarPath();
+            if (agentJarPath == null) {
+                return;
+            }
+            File agentFile = new File(agentJarPath);
+            File baseDir = agentFile.getParentFile().getParentFile();
+            File libsDir = new File(baseDir, "libs");
+            if (!libsDir.exists() || !libsDir.isDirectory()) {
+                return;
+            }
+            File[] jars = libsDir.listFiles();
+            if (jars == null) {
+                return;
+            }
+            for (File f : jars) {
+                String name = f.getName();
+                if (name.startsWith("utils-support-hotspot-spring5x-") && name.endsWith(".jar")) {
+                    instrumentation.appendToSystemClassLoaderSearch(new java.util.jar.JarFile(f));
+                    System.out.println("[INFO] 注入 Spring5x 插件到 System ClassLoader: " + name);
+                } else if (name.startsWith("utils-support-hotspot-core-") && name.endsWith(".jar")) {
+                    instrumentation.appendToSystemClassLoaderSearch(new java.util.jar.JarFile(f));
+                    System.out.println("[INFO] 注入 Core 到 System ClassLoader: " + name);
+                } else if (name.startsWith("byte-buddy-") && name.endsWith(".jar")
+                        && !name.contains("agent")) {
+                    instrumentation.appendToSystemClassLoaderSearch(new java.util.jar.JarFile(f));
+                    System.out.println("[INFO] 注入 ByteBuddy 到 System ClassLoader: " + name);
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("[WARN] 注入插件失败: " + e.getMessage());
         }
     }
 
