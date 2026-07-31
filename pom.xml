@@ -167,7 +167,7 @@
         <premain>com.chua.hotspot.agent.support.Agent</premain>
         <!-- ByteBuddy：统一版本管理，覆盖父/子模块的不同版本 -->
         <bytebuddy.version>1.17.8</bytebuddy.version>
-        <lombok.version>1.18.52</lombok.version>
+        <lombok.version>1.18.46</lombok.version>
     </properties>
 
     <!-- 公共依赖：所有热点监控子模块都会继承 -->
