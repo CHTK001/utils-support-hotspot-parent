@@ -31,6 +31,11 @@ import java.util.function.Supplier;
  */
 public class PluginRegistry {
 
+    /**
+     * 日志对象
+     */
+    private static final LogFactory LOGGER = LogFactory.getInstance();
+
     private static final List<Supplier<Plugin>> PLUGIN_SUPPLIERS = new ArrayList<>();
 
     /**

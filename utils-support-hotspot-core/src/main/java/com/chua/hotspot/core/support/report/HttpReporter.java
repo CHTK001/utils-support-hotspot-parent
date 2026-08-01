@@ -1,6 +1,6 @@
 package com.chua.hotspot.core.support.report;
 
-import com.chua.hotspot.core.support.log.LogFactory;
+import lombok.extern.slf4j.Slf4j;
 
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
@@ -18,18 +18,34 @@ import java.util.concurrent.Executors;
  * @since 2024/12/11
  * @version 4.0.0.34
  */
+@Slf4j
 public class HttpReporter {
 
+    /**
+     * 上报 URL
+     */
     private final String url;
+
+    /**
+     * 超时时间（毫秒）
+     */
     private final int timeout;
+
+    /**
+     * 最大重试次数
+     */
     private final int maxRetries;
+
+    /**
+     * 异步执行线程池
+     */
     private final ExecutorService executor;
 
     /**
      * 构造函数
      *
-     * @param url 上报 URL
-     * @param timeout 超时时间（毫秒）
+     * @param url        上报 URL
+     * @param timeout    超时时间（毫秒）
      * @param maxRetries 最大重试次数
      */
     public HttpReporter(String url, int timeout, int maxRetries) {
@@ -54,9 +70,9 @@ public class HttpReporter {
                         return true;
                     }
                 } catch (Exception e) {
-                    LOGGER.debug("HTTP 上报失败，重试 {}/{}: {}", i + 1, maxRetries, e.getMessage());
+                    log.debug("HTTP 上报失败，重试 {}/{}: {}", i + 1, maxRetries, e.getMessage());
                 }
-                
+
                 // 重试前等待
                 if (i < maxRetries - 1) {
                     try {
@@ -85,7 +101,7 @@ public class HttpReporter {
                     return true;
                 }
             } catch (Exception e) {
-                LOGGER.debug("HTTP 上报失败，重试 {}/{}: {}", i + 1, maxRetries, e.getMessage());
+                log.debug("HTTP 上报失败，重试 {}/{}: {}", i + 1, maxRetries, e.getMessage());
             }
         }
         return false;
@@ -117,10 +133,10 @@ public class HttpReporter {
 
             int statusCode = connection.getResponseCode();
             if (statusCode >= 200 && statusCode < 300) {
-                LOGGER.debug("HTTP 上报成功，状态码: {}", statusCode);
+                log.debug("HTTP 上报成功，状态码: {}", statusCode);
                 return true;
             } else {
-                LOGGER.warn("HTTP 上报失败，状态码: {}", statusCode);
+                log.warn("HTTP 上报失败，状态码: {}", statusCode);
                 return false;
             }
         } finally {

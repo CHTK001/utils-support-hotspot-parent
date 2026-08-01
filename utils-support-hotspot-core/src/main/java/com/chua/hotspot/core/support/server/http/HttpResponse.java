@@ -24,6 +24,11 @@ import java.nio.charset.StandardCharsets;
 public class HttpResponse {
 
     /**
+     * 日志对象
+     */
+    private static final LogFactory LOGGER = LogFactory.getInstance();
+
+    /**
      * 原始 HttpExchange
      */
     private final HttpExchange exchange;

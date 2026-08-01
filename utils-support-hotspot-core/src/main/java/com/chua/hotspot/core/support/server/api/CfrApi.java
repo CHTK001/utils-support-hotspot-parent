@@ -23,6 +23,11 @@ import java.util.stream.Collectors;
  */
 public class CfrApi implements ApiEndpoint {
 
+    /**
+     * 日志对象
+     */
+    private static final LogFactory LOGGER = LogFactory.getInstance();
+
     @Override
     public String name() {
         return "cfr";
@@ -41,16 +46,16 @@ public class CfrApi implements ApiEndpoint {
             return "// 请提供类名参数 name";
         }
         
-        LogFactory.getInstance().debug("获取类结构: {}", className);
+        LOGGER.debug("获取类结构: {}", className);
         
         try {
             Class<?> clazz = Class.forName(className);
             return generateClassStructure(clazz);
         } catch (ClassNotFoundException e) {
-            LogFactory.getInstance().error("类不存在: {}", className);
+            LOGGER.error("类不存在: {}", className);
             return "// 类不存在: " + className;
         } catch (Exception e) {
-            LogFactory.getInstance().error("获取类结构失败: {}", e.getMessage());
+            LOGGER.error("获取类结构失败: {}", e.getMessage());
             return "// 获取类结构失败: " + e.getMessage();
         }
     }

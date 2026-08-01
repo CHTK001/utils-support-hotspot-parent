@@ -24,7 +24,7 @@ import java.util.*;
  */
 public class HttpPerformanceApi implements ApiEndpoint {
     
-    private final LogFactory logFactory = LogFactory.getInstance();
+    private final LogFactory LOGGER = LogFactory.getInstance();
     private final HttpPerformanceRecorder recorder = HttpPerformanceRecorder.getInstance();
     
     @Override
@@ -72,7 +72,7 @@ public class HttpPerformanceApi implements ApiEndpoint {
                     return error("Unknown action: " + action);
             }
         } catch (Exception e) {
-            logFactory.error("HTTP performance API error", e);
+            LOGGER.error("HTTP performance API error", e);
             return error("Error: " + e.getMessage());
         }
     }
@@ -168,7 +168,7 @@ public class HttpPerformanceApi implements ApiEndpoint {
             // Set threshold
             long threshold = Long.parseLong(thresholdStr);
             recorder.setSlowThreshold(threshold);
-            logFactory.info("HTTP performance slow threshold set to: {}ms", threshold);
+            LOGGER.info("HTTP performance slow threshold set to: {}ms", threshold);
         }
         
         Map<String, Object> config = new HashMap<>();
@@ -182,7 +182,7 @@ public class HttpPerformanceApi implements ApiEndpoint {
      */
     private Object handleClear() {
         recorder.clear();
-        logFactory.info("HTTP performance statistics cleared");
+        LOGGER.info("HTTP performance statistics cleared");
         
         Map<String, Object> result = new HashMap<>();
         result.put("message", "Statistics cleared");

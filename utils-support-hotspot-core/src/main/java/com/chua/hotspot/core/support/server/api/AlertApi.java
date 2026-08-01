@@ -26,7 +26,7 @@ import java.util.*;
  */
 public class AlertApi implements ApiEndpoint {
 
-    private final LogFactory logFactory = LogFactory.getInstance();
+    private final LogFactory LOGGER = LogFactory.getInstance();
     private final AlertManager alertManager = AlertManager.getInstance();
 
     @Override
@@ -64,7 +64,7 @@ public class AlertApi implements ApiEndpoint {
                     return Collections.singletonMap("error", "Unknown action: " + action);
             }
         } catch (Exception e) {
-            logFactory.warn("Alert API 处理失败: {}", e.getMessage());
+            LOGGER.warn("Alert API 处理失败: {}", e.getMessage());
             return Collections.singletonMap("error", e.getMessage());
         }
     }

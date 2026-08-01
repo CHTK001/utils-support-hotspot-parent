@@ -38,7 +38,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class SpyHandlerImpl implements SpyHandler {
 
         /** \u65e5\u5fd7\u5de5\u5382 */
-    private final LogFactory logFactory = LogFactory.getInstance();
+    private final LogFactory LOGGER = LogFactory.getInstance();
 
     /** \u63d2\u4ef6\u540d\u5230\u5b9e\u4f8b\u7684\u6620\u5c04 */
     private final Map<String, BytebuddyPlugin> pluginMap = new ConcurrentHashMap<>();
@@ -62,11 +62,11 @@ public class SpyHandlerImpl implements SpyHandler {
             if (plugin instanceof BytebuddyPlugin) {
                 BytebuddyPlugin bp = (BytebuddyPlugin) plugin;
                 pluginMap.put(bp.name(), bp);
-                logFactory.debug("SpyHandler 注册插件: {}", bp.name());
+                LOGGER.debug("SpyHandler 注册插件: {}", bp.name());
             }
         }
 
-        logFactory.info("SpyHandler 初始化完成，注册了 {} 个插件", pluginMap.size());
+        LOGGER.info("SpyHandler 初始化完成，注册了 {} 个插件", pluginMap.size());
         initialized = true;
     }
 
@@ -92,9 +92,9 @@ public class SpyHandlerImpl implements SpyHandler {
             try {
                 plugin.spyBefore(className, methodName, target, args);
             } catch (Throwable e) {
-                logFactory.warn("Spy onBefore 回调异常: plugin={}, class={}, method={}, error={}",
+                LOGGER.warn("Spy onBefore 回调异常: plugin={}, class={}, method={}, error={}",
                         plugin.name(), className, methodName, e.toString());
-                logFactory.warn("StackTrace: ", e);
+                LOGGER.warn("StackTrace: ", e);
             }
         }
     }
@@ -106,9 +106,9 @@ public class SpyHandlerImpl implements SpyHandler {
             try {
                 plugin.spyAfter(className, methodName, target, args, result);
             } catch (Throwable e) {
-                logFactory.warn("Spy onAfter 回调异常: plugin={}, class={}, method={}, error={}",
+                LOGGER.warn("Spy onAfter 回调异常: plugin={}, class={}, method={}, error={}",
                         plugin.name(), className, methodName, e.toString());
-                logFactory.warn("StackTrace: ", e);
+                LOGGER.warn("StackTrace: ", e);
             }
         }
     }
@@ -120,9 +120,9 @@ public class SpyHandlerImpl implements SpyHandler {
             try {
                 plugin.spyError(className, methodName, target, args, throwable);
             } catch (Throwable e) {
-                logFactory.warn("Spy onError 回调异常: plugin={}, class={}, method={}, error={}",
+                LOGGER.warn("Spy onError 回调异常: plugin={}, class={}, method={}, error={}",
                         plugin.name(), className, methodName, e.toString());
-                logFactory.warn("StackTrace: ", e);
+                LOGGER.warn("StackTrace: ", e);
             }
         }
     }

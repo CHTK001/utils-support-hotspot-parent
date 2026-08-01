@@ -23,6 +23,11 @@ import java.util.Map;
 public class StaticResourceHandler {
 
     /**
+     * 日志对象
+     */
+    private static final LogFactory LOGGER = LogFactory.getInstance();
+
+    /**
      * MIME 类型映射
      */
     private static final Map<String, String> MIME_TYPES = new HashMap<>();
@@ -79,14 +84,14 @@ public class StaticResourceHandler {
         // 去掉开头的斜杠
         String resourcePath = path.startsWith("/") ? path.substring(1) : path;
         
-        LogFactory.getInstance().debug("请求静态资源: {}", resourcePath);
+        LOGGER.debug("请求静态资源: {}", resourcePath);
         
         try {
             // 从 classpath 读取资源
             InputStream inputStream = getClass().getClassLoader().getResourceAsStream(resourcePath);
             
             if (inputStream == null) {
-                LogFactory.getInstance().debug("静态资源不存在: {}", resourcePath);
+                LOGGER.debug("静态资源不存在: {}", resourcePath);
                 response.notFound();
                 return;
             }
@@ -102,7 +107,7 @@ public class StaticResourceHandler {
             response.staticResource(content, mimeType);
             
         } catch (Exception e) {
-            LogFactory.getInstance().error("读取静态资源失败: path={}, error={}", resourcePath, e.getMessage());
+            LOGGER.error("读取静态资源失败: path={}, error={}", resourcePath, e.getMessage());
             response.error("读取静态资源失败: " + e.getMessage());
         }
     }

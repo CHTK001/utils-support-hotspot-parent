@@ -43,17 +43,29 @@ import static net.bytebuddy.matcher.ElementMatchers.*;
  */
 public class AgentFactory {
 
-    /** \u5355\u4f8b\u5b9e\u4f8b */
+    /**
+     * 单例实例
+     */
     static AgentFactory INSTANCE = new AgentFactory();
-    /** \u63d2\u4ef6\u5de5\u5382 */
-    final PluginFactory pluginFactory = PluginFactory.getInstance();
-    /** \u65e5\u5fd7\u5de5\u5382 */
-    final LogFactory logFactory = LogFactory.getInstance();
 
-    /** SpyHandler \u5b9e\u4f8b\uff0c\u7528\u4e8e\u6ce8\u518c className \u2192 pluginName \u6620\u5c04 */
+    /**
+     * 插件工厂
+     */
+    final PluginFactory pluginFactory = PluginFactory.getInstance();
+
+    /**
+     * 日志对象
+     */
+    final LogFactory LOGGER = LogFactory.getInstance();
+
+    /**
+     * SpyHandler 实例，用于注册 className → pluginName 映射
+     */
     private SpyHandlerImpl spyHandler;
 
-    /** \u662f\u5426\u5df2\u521d\u59cb\u5316\uff08\u5e42\u7b49\u4fdd\u62a4\uff09 */
+    /**
+     * 是否已初始化（幂等保护）
+     */
     private volatile boolean initialized = false;
 
     AgentFactory() {
@@ -83,7 +95,7 @@ public class AgentFactory {
      */
     public void init(boolean isAttachMode) {
         if (initialized) {
-            logFactory.warn("AgentFactory 已初始化，跳过重复初始化");
+            LOGGER.warn("AgentFactory 已初始化，跳过重复初始化");
             return;
         }
 
@@ -155,13 +167,13 @@ public class AgentFactory {
         ElementMatcher<? super net.bytebuddy.description.method.MethodDescription> methodMatcher = plugin.methodMatcher();
 
         if (typeMatcher == null || methodMatcher == null) {
-            logFactory.warn("插件 {} 的 type() 或 methodMatcher() 返回 null，跳过注册", plugin.name());
+            LOGGER.warn("插件 {} 的 type() 或 methodMatcher() 返回 null，跳过注册", plugin.name());
             return transform;
         }
 
         final String pluginName = plugin.name();
 
-        logFactory.debug("注册 Spy 插件: {}, type={}, methodMatcher={}", pluginName, typeMatcher, methodMatcher);
+        LOGGER.debug("注册 Spy 插件: {}, type={}, methodMatcher={}", pluginName, typeMatcher, methodMatcher);
 
         // 创建 Spy Advice Transformer
         AgentBuilder.Transformer spyTransformer = new AgentBuilder.Transformer() {
@@ -175,7 +187,7 @@ public class AgentFactory {
                 // 这样 Spy 回调时可以快速路由到正确的插件
                 String className = typeDescription.getName();
                 spyHandler.registerClassMapping(className, pluginName);
-                logFactory.debug("Spy 类名映射: {} → {}", className, pluginName);
+                LOGGER.debug("Spy 类名映射: {} → {}", className, pluginName);
 
                 return builder
                         .visit(Advice.to(SpyAdvice.Enter.class).on(methodMatcher))
@@ -312,10 +324,10 @@ public class AgentFactory {
                                     .visit(Advice.to(CloseAdvice.class)
                                             .on(named("kill").and(takesNoArguments()))));
 
-            logFactory.info("文件句柄监控已安装");
+            LOGGER.info("文件句柄监控已安装");
 
         } catch (Exception e) {
-            logFactory.error("安装文件句柄监控失败: {}", e.getMessage(), e);
+            LOGGER.error("安装文件句柄监控失败: {}", e.getMessage(), e);
         }
         return transform;
     }

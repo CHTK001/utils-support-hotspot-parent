@@ -20,6 +20,11 @@ import java.util.Map;
  */
 public class WebSocketConfigApi implements ApiEndpoint {
 
+    /**
+     * 日志对象
+     */
+    private static final LogFactory LOGGER = LogFactory.getInstance();
+
     @Override
     public String name() {
         return "websocket-config";
@@ -40,7 +45,7 @@ public class WebSocketConfigApi implements ApiEndpoint {
             return result;
             
         } catch (Exception e) {
-            LogFactory.getInstance().error("处理 WebSocket 配置请求失败: {}", e.getMessage());
+            LOGGER.error("处理 WebSocket 配置请求失败: {}", e.getMessage());
             Map<String, Object> error = new HashMap<>();
             error.put("error", "内部错误");
             return error;

@@ -21,7 +21,15 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class ApiRegistry {
 
+    /**
+     * 单例实例
+     */
     private static final ApiRegistry INSTANCE = new ApiRegistry();
+
+    /**
+     * 日志对象
+     */
+    private static final LogFactory LOGGER = LogFactory.getInstance();
 
     /**
      * 已注册的端点
@@ -59,7 +67,7 @@ public class ApiRegistry {
             register(endpoint);
             endpointClasses.put(endpoint.name(), endpointClass);
         } catch (Exception e) {
-            LogFactory.getInstance().error("注册 API 端点失败: {}", endpointClass.getName(), e);
+            LOGGER.error("注册 API 端点失败: {}", endpointClass.getName(), e);
         }
     }
 
@@ -71,7 +79,7 @@ public class ApiRegistry {
     public void register(ApiEndpoint endpoint) {
         String name = endpoint.name();
         endpoints.put(name, endpoint);
-        LogFactory.getInstance().debug("注册 API 端点: {}", name);
+        LOGGER.debug("注册 API 端点: {}", name);
     }
 
     /**
@@ -105,7 +113,7 @@ public class ApiRegistry {
                     Object result = endpoint.handle(request);
                     response.success(result);
                 } catch (Exception e) {
-                    LogFactory.getInstance().error("API 端点执行失败: name={}, error={}", name, e.getMessage());
+                    LOGGER.error("API 端点执行失败: name={}, error={}", name, e.getMessage());
                     response.error("执行失败: " + e.getMessage());
                 }
             };
@@ -115,7 +123,7 @@ public class ApiRegistry {
             server.route("/api/" + name, handler);
             server.route("/agent/" + name, handler);
             server.route("/agent/api/" + name, handler);
-            LogFactory.getInstance().debug("绑定 API 路由: /{}, /api/{}, /agent/{}, /agent/api/{}", name, name, name, name);
+            LOGGER.debug("绑定 API 路由: /{}, /api/{}, /agent/{}, /agent/api/{}", name, name, name, name);
         });
 
         // 注册端点列表接口
@@ -157,7 +165,7 @@ public class ApiRegistry {
         server.route("/vite.svg", (request, response) -> staticHandler.handle(request, response));
         server.route("/platform-config.json", (request, response) -> staticHandler.handle(request, response));
         
-        LogFactory.getInstance().info("静态资源路由已注册");
+        LOGGER.info("静态资源路由已注册");
     }
 
     /**
@@ -181,7 +189,7 @@ public class ApiRegistry {
             try {
                 register(clazz);
             } catch (Exception e) {
-                LogFactory.getInstance().warn("注册内置端点失败: {}", clazz.getSimpleName());
+                LOGGER.warn("注册内置端点失败: {}", clazz.getSimpleName());
             }
         }
     }

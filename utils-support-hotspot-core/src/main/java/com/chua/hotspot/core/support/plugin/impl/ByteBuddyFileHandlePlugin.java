@@ -47,9 +47,12 @@ import static net.bytebuddy.matcher.ElementMatchers.*;
  * @version 4.0.0.36
  */
 public class ByteBuddyFileHandlePlugin implements Plugin, TransformEventHandler {
-    
-    private static final LogFactory logFactory = LogFactory.getInstance();
-    
+
+    /**
+     * 日志对象
+     */
+    private static final LogFactory LOGGER = LogFactory.getInstance();
+
     /**
      * 全局句柄注册表（用于 Advice 回调）
      */
@@ -76,14 +79,14 @@ public class ByteBuddyFileHandlePlugin implements Plugin, TransformEventHandler 
 
     @Override
     public void init() {
-        logFactory.info("ByteBuddy 文件句柄监控插件初始化");
+        LOGGER.info("ByteBuddy 文件句柄监控插件初始化");
     }
 
     @Override
     public void initComplete() {
         Instrumentation inst = InstrumentationFactory.getInstance().get();
         if (inst == null) {
-            logFactory.error("无法获取 Instrumentation，ByteBuddy 文件句柄监控插件无法启动");
+            LOGGER.error("无法获取 Instrumentation，ByteBuddy 文件句柄监控插件无法启动");
             return;
         }
         
@@ -96,14 +99,14 @@ public class ByteBuddyFileHandlePlugin implements Plugin, TransformEventHandler 
         // 标记 Agent 已安装
         Listener.AGENT_INSTALLED = true;
         
-        logFactory.info("ByteBuddy 文件句柄监控已启动");
+        LOGGER.info("ByteBuddy 文件句柄监控已启动");
     }
 
     @Override
     public void finish() {
         Listener.removeEventHandler(this);
-        logFactory.info("ByteBuddy 文件句柄监控已停止");
-        logFactory.info("统计信息: 文件打开={} 关闭={}, Socket打开={} 关闭={}, 管道打开={} 关闭={}",
+        LOGGER.info("ByteBuddy 文件句柄监控已停止");
+        LOGGER.info("统计信息: 文件打开={} 关闭={}, Socket打开={} 关闭={}, 管道打开={} 关闭={}",
             FILE_OPEN_COUNT.get(), FILE_CLOSE_COUNT.get(),
             SOCKET_OPEN_COUNT.get(), SOCKET_CLOSE_COUNT.get(),
             PIPE_OPEN_COUNT.get(), PIPE_CLOSE_COUNT.get());
@@ -130,7 +133,7 @@ public class ByteBuddyFileHandlePlugin implements Plugin, TransformEventHandler 
                     public void onError(String typeName, ClassLoader classLoader, 
                                        net.bytebuddy.utility.JavaModule module, boolean loaded, Throwable throwable) {
                         if (DETAILED_LOGGING) {
-                            logFactory.debug("ByteBuddy 转换错误: {} - {}", typeName, throwable.getMessage());
+                            LOGGER.debug("ByteBuddy 转换错误: {} - {}", typeName, throwable.getMessage());
                         }
                     }
                     
@@ -139,7 +142,7 @@ public class ByteBuddyFileHandlePlugin implements Plugin, TransformEventHandler 
                                                 net.bytebuddy.utility.JavaModule module, boolean loaded,
                                                 net.bytebuddy.dynamic.DynamicType dynamicType) {
                         if (DETAILED_LOGGING) {
-                            logFactory.debug("ByteBuddy 转换成功: {}", typeDescription.getName());
+                            LOGGER.debug("ByteBuddy 转换成功: {}", typeDescription.getName());
                         }
                     }
                 });
@@ -251,10 +254,10 @@ public class ByteBuddyFileHandlePlugin implements Plugin, TransformEventHandler 
             // 安装到 Instrumentation
             agentBuilder.installOn(inst);
             
-            logFactory.info("ByteBuddy Agent 安装完成");
+            LOGGER.info("ByteBuddy Agent 安装完成");
             
         } catch (Exception e) {
-            logFactory.error("安装 ByteBuddy Agent 失败: {}", e.getMessage(), e);
+            LOGGER.error("安装 ByteBuddy Agent 失败: {}", e.getMessage(), e);
         }
     }
     
@@ -268,7 +271,7 @@ public class ByteBuddyFileHandlePlugin implements Plugin, TransformEventHandler 
         addToHistory(info);
         FileHandlerFactory.open(this, new Object[]{source, file});
         if (DETAILED_LOGGING) {
-            logFactory.debug("文件打开: {} 线程: {}", file.getAbsolutePath(), span.getThreadName());
+            LOGGER.debug("文件打开: {} 线程: {}", file.getAbsolutePath(), span.getThreadName());
         }
     }
 
@@ -279,7 +282,7 @@ public class ByteBuddyFileHandlePlugin implements Plugin, TransformEventHandler 
         HANDLE_MAP.put(source, info);
         addToHistory(info);
         if (DETAILED_LOGGING) {
-            logFactory.debug("文件通道打开: {} 线程: {}", path, span.getThreadName());
+            LOGGER.debug("文件通道打开: {} 线程: {}", path, span.getThreadName());
         }
     }
 
@@ -290,7 +293,7 @@ public class ByteBuddyFileHandlePlugin implements Plugin, TransformEventHandler 
         HANDLE_MAP.put(source, info);
         addToHistory(info);
         if (DETAILED_LOGGING) {
-            logFactory.debug("Socket 打开: {} 线程: {}", address, span.getThreadName());
+            LOGGER.debug("Socket 打开: {} 线程: {}", address, span.getThreadName());
         }
     }
 
@@ -301,7 +304,7 @@ public class ByteBuddyFileHandlePlugin implements Plugin, TransformEventHandler 
         HANDLE_MAP.put(source, info);
         addToHistory(info);
         if (DETAILED_LOGGING) {
-            logFactory.debug("管道打开: {} 线程: {}", type, span.getThreadName());
+            LOGGER.debug("管道打开: {} 线程: {}", type, span.getThreadName());
         }
     }
 
@@ -312,7 +315,7 @@ public class ByteBuddyFileHandlePlugin implements Plugin, TransformEventHandler 
         HANDLE_MAP.put(source, info);
         addToHistory(info);
         if (DETAILED_LOGGING) {
-            logFactory.debug("选择器打开: 线程: {}", span.getThreadName());
+            LOGGER.debug("选择器打开: 线程: {}", span.getThreadName());
         }
     }
 
@@ -336,7 +339,7 @@ public class ByteBuddyFileHandlePlugin implements Plugin, TransformEventHandler 
                     break;
             }
             if (DETAILED_LOGGING) {
-                logFactory.debug("{} 关闭: {} 存活时间: {}ms",
+                LOGGER.debug("{} 关闭: {} 存活时间: {}ms",
                     info.getType(), info.getResource(),
                     info.getCloseTime() - info.getOpenTime());
             }
@@ -345,12 +348,12 @@ public class ByteBuddyFileHandlePlugin implements Plugin, TransformEventHandler 
 
     @Override
     public void onOutOfDescriptors(int currentCount) {
-        logFactory.error("文件描述符不足! 当前打开句柄数: {}", currentCount);
+        LOGGER.error("文件描述符不足! 当前打开句柄数: {}", currentCount);
     }
 
     @Override
     public void onThresholdExceeded(int count, int threshold) {
-        logFactory.warn("句柄数量超过阈值! 当前: {} 阈值: {}", count, threshold);
+        LOGGER.warn("句柄数量超过阈值! 当前: {} 阈值: {}", count, threshold);
     }
 
     // ==================== 查询接口 ====================

@@ -24,7 +24,7 @@ import java.util.*;
  */
 public class ExceptionApi implements ApiEndpoint {
     
-    private final LogFactory logFactory = LogFactory.getInstance();
+    private final LogFactory LOGGER = LogFactory.getInstance();
     private final ExceptionRecorder recorder = ExceptionRecorder.getInstance();
     
     @Override
@@ -69,7 +69,7 @@ public class ExceptionApi implements ApiEndpoint {
                     return error("Unknown action: " + action);
             }
         } catch (Exception e) {
-            logFactory.error("Exception API error", e);
+            LOGGER.error("Exception API error", e);
             return error("Error: " + e.getMessage());
         }
     }
@@ -181,7 +181,7 @@ public class ExceptionApi implements ApiEndpoint {
      */
     private Object handleClear() {
         recorder.clear();
-        logFactory.info("Exception statistics cleared");
+        LOGGER.info("Exception statistics cleared");
         
         Map<String, Object> result = new HashMap<>();
         result.put("message", "Statistics cleared");
