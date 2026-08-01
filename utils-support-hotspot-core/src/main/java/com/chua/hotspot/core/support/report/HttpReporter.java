@@ -54,7 +54,7 @@ public class HttpReporter {
                         return true;
                     }
                 } catch (Exception e) {
-                    LogFactory.getInstance().debug("HTTP 上报失败，重试 {}/{}: {}", i + 1, maxRetries, e.getMessage());
+                    LOGGER.debug("HTTP 上报失败，重试 {}/{}: {}", i + 1, maxRetries, e.getMessage());
                 }
                 
                 // 重试前等待
@@ -85,7 +85,7 @@ public class HttpReporter {
                     return true;
                 }
             } catch (Exception e) {
-                LogFactory.getInstance().debug("HTTP 上报失败，重试 {}/{}: {}", i + 1, maxRetries, e.getMessage());
+                LOGGER.debug("HTTP 上报失败，重试 {}/{}: {}", i + 1, maxRetries, e.getMessage());
             }
         }
         return false;
@@ -117,10 +117,10 @@ public class HttpReporter {
 
             int statusCode = connection.getResponseCode();
             if (statusCode >= 200 && statusCode < 300) {
-                LogFactory.getInstance().debug("HTTP 上报成功，状态码: {}", statusCode);
+                LOGGER.debug("HTTP 上报成功，状态码: {}", statusCode);
                 return true;
             } else {
-                LogFactory.getInstance().warn("HTTP 上报失败，状态码: {}", statusCode);
+                LOGGER.warn("HTTP 上报失败，状态码: {}", statusCode);
                 return false;
             }
         } finally {

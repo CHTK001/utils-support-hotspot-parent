@@ -129,7 +129,7 @@ public class HttpResponse {
      */
     public void write(byte[] data) {
         if (sent) {
-            LogFactory.getInstance().warn("响应已发送，无法重复写入");
+            LOGGER.warn("响应已发送，无法重复写入");
             return;
         }
         sent = true;
@@ -141,7 +141,7 @@ public class HttpResponse {
                 os.flush();
             }
         } catch (IOException e) {
-            LogFactory.getInstance().error("写入 HTTP 响应失败: {}", e.getMessage());
+            LOGGER.error("写入 HTTP 响应失败: {}", e.getMessage());
         }
     }
 

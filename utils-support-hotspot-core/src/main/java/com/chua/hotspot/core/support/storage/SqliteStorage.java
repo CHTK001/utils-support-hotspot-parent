@@ -130,10 +130,10 @@ public class SqliteStorage {
             }
             
             // 加载 SQLite JDBC 驱动
-            Class.forName("org.sqlite.JDBC");
-            
+            Class.forName(SQLITE_JDBC_DRIVER);
+
             // 建立连接
-            connection = DriverManager.getConnection("jdbc:sqlite:" + dbPath);
+            connection = DriverManager.getConnection(SQLITE_JDBC_URL_PREFIX + dbPath);
             
             // 创建表结构
             createTables();

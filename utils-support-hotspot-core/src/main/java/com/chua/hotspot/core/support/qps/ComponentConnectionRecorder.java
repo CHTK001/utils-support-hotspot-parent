@@ -24,7 +24,15 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public class ComponentConnectionRecorder {
 
+    /**
+     * 单例实例
+     */
     private static final ComponentConnectionRecorder INSTANCE = new ComponentConnectionRecorder();
+
+    /**
+     * 日志对象
+     */
+    private static final LogFactory LOGGER = LogFactory.getInstance();
 
     /**
      * 组件连接计数
@@ -64,7 +72,7 @@ public class ComponentConnectionRecorder {
         updateInstanceInfo(instance);
         componentCache.put(key, instance);
         
-        LogFactory.getInstance().debug("记录组件连接: {} {}:{} (count={})", 
+        LOGGER.debug("记录组件连接: {} {}:{} (count={})", 
                 instance.getName(), 
                 instance.getTargetHost(), 
                 instance.getTargetPort(),
@@ -110,7 +118,7 @@ public class ComponentConnectionRecorder {
             }
         }
         
-        LogFactory.getInstance().info("刷新组件连接信息: {}:{}", realHost, realPort);
+        LOGGER.info("刷新组件连接信息: {}:{}", realHost, realPort);
         
         int updatedCount = 0;
         // 更新所有缓存的 ServiceInstance
@@ -122,14 +130,14 @@ public class ComponentConnectionRecorder {
             
             if (!oldInfo.equals(newInfo)) {
                 updatedCount++;
-                LogFactory.getInstance().debug("更新组件 {} 连接: {} -> {} (target: {}:{})", 
+                LOGGER.debug("更新组件 {} 连接: {} -> {} (target: {}:{})", 
                     instance.getName(), oldInfo, newInfo, 
                     instance.getTargetHost(), instance.getTargetPort());
             }
         }
         
         if (updatedCount > 0) {
-            LogFactory.getInstance().info("已更新 {} 个组件连接信息", updatedCount);
+            LOGGER.info("已更新 {} 个组件连接信息", updatedCount);
         }
     }
 

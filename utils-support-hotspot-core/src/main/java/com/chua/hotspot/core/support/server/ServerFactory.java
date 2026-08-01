@@ -25,7 +25,15 @@ import com.chua.hotspot.core.support.storage.SqliteStorage;
  */
 public class ServerFactory {
 
+    /**
+     * 单例实例
+     */
     private static final ServerFactory INSTANCE = new ServerFactory();
+
+    /**
+     * 日志对象
+     */
+    private static final LogFactory LOGGER = LogFactory.getInstance();
 
     /**
      * 环境配置
@@ -74,7 +82,7 @@ public class ServerFactory {
      */
     public synchronized void init() {
         if (initialized) {
-            LogFactory.getInstance().warn("服务器已初始化，跳过重复初始化");
+            LOGGER.warn("服务器已初始化，跳过重复初始化");
             return;
         }
 
@@ -87,9 +95,9 @@ public class ServerFactory {
         String wsPortStr = environmentFactory.getString("protocol.websocket.port", String.valueOf(httpPort + 10000));
         int wsPort = Integer.parseInt(wsPortStr);
 
-        LogFactory.getInstance().info("=============================");
-        LogFactory.getInstance().info("        Agent 服务器          ");
-        LogFactory.getInstance().info("=============================");
+        LOGGER.info("=============================");
+        LOGGER.info("        Agent 服务器          ");
+        LOGGER.info("=============================");
         
         // 初始化 SQLite 存储
         SqliteStorage.getInstance();
@@ -111,11 +119,11 @@ public class ServerFactory {
                 httpServer = new HttpServer(host, actualHttpPort);
                 ApiRegistry.getInstance().bindToServer(httpServer);
                 httpServer.start();
-                LogFactory.getInstance().info("HTTP 服务器启动成功: {}:{}", host, actualHttpPort);
+                LOGGER.info("HTTP 服务器启动成功: {}:{}", host, actualHttpPort);
                 break;
             } catch (Exception e) {
                 if (isPortConflictException(e)) {
-                    LogFactory.getInstance().warn("HTTP 端口 {} 已被占用，尝试端口 {}", actualHttpPort, actualHttpPort + 1);
+                    LOGGER.warn("HTTP 端口 {} 已被占用，尝试端口 {}", actualHttpPort, actualHttpPort + 1);
                     actualHttpPort++;
                     if (i == maxRetries - 1) {
                         throw new RuntimeException("HTTP 服务器启动失败：端口 " + httpPort + "-" + actualHttpPort + " 均被占用", e);
@@ -133,11 +141,11 @@ public class ServerFactory {
             try {
                 webSocketServer = new WebsocketServer(actualWsPort);
                 webSocketServer.start();
-                LogFactory.getInstance().info("WebSocket 服务器启动成功: {}:{}", host, actualWsPort);
+                LOGGER.info("WebSocket 服务器启动成功: {}:{}", host, actualWsPort);
                 break;
             } catch (Exception e) {
                 if (isPortConflictException(e)) {
-                    LogFactory.getInstance().warn("WebSocket 端口 {} 已被占用，尝试端口 {}", actualWsPort, actualWsPort + 1);
+                    LOGGER.warn("WebSocket 端口 {} 已被占用，尝试端口 {}", actualWsPort, actualWsPort + 1);
                     actualWsPort++;
                     if (i == maxRetries - 1) {
                         throw new RuntimeException("WebSocket 服务器启动失败：端口 " + wsPort + "-" + actualWsPort + " 均被占用", e);
@@ -165,9 +173,9 @@ public class ServerFactory {
      */
     private void registerShutdownHook() {
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            LogFactory.getInstance().info("正在关闭 Agent 服务器...");
+            LOGGER.info("正在关闭 Agent 服务器...");
             stop();
-            LogFactory.getInstance().info("Agent 服务器已关闭");
+            LOGGER.info("Agent 服务器已关闭");
         }));
     }
 
@@ -180,12 +188,12 @@ public class ServerFactory {
             if (!configFile.isEmpty()) {
                 configWatcher = new ConfigWatcher(configFile);
                 configWatcher.start();
-                LogFactory.getInstance().info("配置文件热更新监视器已启动: {}", configFile);
+                LOGGER.info("配置文件热更新监视器已启动: {}", configFile);
             } else {
-                LogFactory.getInstance().debug("未配置热点配置文件路径，跳过配置热更新");
+                LOGGER.debug("未配置热点配置文件路径，跳过配置热更新");
             }
         } catch (Exception e) {
-            LogFactory.getInstance().warn("配置文件热更新监视器启动失败: {}", e.getMessage());
+            LOGGER.warn("配置文件热更新监视器启动失败: {}", e.getMessage());
         }
     }
 
@@ -195,7 +203,7 @@ public class ServerFactory {
      */
     private void startMonitorSync() {
         monitorSyncThread = new Thread(() -> {
-            LogFactory.getInstance().info("Agent 自监控定时同步线程已启动");
+            LOGGER.info("Agent 自监控定时同步线程已启动");
             while (!Thread.currentThread().isInterrupted()) {
                 try {
                     Thread.sleep(30_000); // 30 秒同步一次
@@ -204,10 +212,10 @@ public class ServerFactory {
                     Thread.currentThread().interrupt();
                     break;
                 } catch (Exception e) {
-                    LogFactory.getInstance().debug("Agent 自监控同步异常: {}", e.getMessage());
+                    LOGGER.debug("Agent 自监控同步异常: {}", e.getMessage());
                 }
             }
-            LogFactory.getInstance().info("Agent 自监控定时同步线程已停止");
+            LOGGER.info("Agent 自监控定时同步线程已停止");
         }, "agent-monitor-sync");
         monitorSyncThread.setDaemon(true);
         monitorSyncThread.start();

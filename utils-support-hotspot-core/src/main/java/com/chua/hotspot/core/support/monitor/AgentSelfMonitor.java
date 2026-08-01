@@ -37,7 +37,7 @@ public class AgentSelfMonitor {
     /**
      * 日志对象
      */
-    private final LogFactory logger = LogFactory.getInstance();
+    private static final LogFactory LOGGER = LogFactory.getInstance();
 
     // ==================== 字节码增强统计 ====================
 
@@ -217,7 +217,7 @@ public class AgentSelfMonitor {
     public void recordTransformFail(String className) {
         transformFailCount.incrementAndGet();
         MetricsExporter.getInstance().increment(METRIC_TRANSFORM_FAIL_TOTAL);
-        logger.warn("类增强失败: {}", className);
+        LOGGER.warn("类增强失败: {}", className);
     }
 
     // ==================== 数据上报统计方法 ====================

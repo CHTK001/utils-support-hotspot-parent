@@ -32,6 +32,11 @@ import java.util.stream.Collectors;
 public class ReportFactory {
 
     /**
+     * 日志对象
+     */
+    private static final LogFactory LOGGER = LogFactory.getInstance();
+
+    /**
      * 单例实例
      */
     private static final ReportFactory INSTANCE = new ReportFactory();
@@ -138,7 +143,7 @@ public class ReportFactory {
             LOCAL_HOST = getRealLocalHost();
             APP_HOST = LOCAL_HOST;
         } catch (Exception e) {
-            LogFactory.getInstance().warn("获取本机IP失败: {}", e.getMessage());
+            LOGGER.warn("获取本机IP失败: {}", e.getMessage());
         }
     }
 
@@ -254,15 +259,15 @@ public class ReportFactory {
         // 初始化应用信息
         initAppInfo();
 
-        LogFactory.getInstance().info("=============================数据上报========================");
+        LOGGER.info("=============================数据上报========================");
         
         // 优先尝试联动上报（spring-support-report-client-starter）
         initSyncClient();
         
         if (useSyncClient) {
-            LogFactory.getInstance().info("检测到 SyncClient，使用联动上报模式");
+            LOGGER.info("检测到 SyncClient，使用联动上报模式");
         } else {
-            LogFactory.getInstance().info("未检测到 SyncClient，使用自主上报模式");
+            LOGGER.info("未检测到 SyncClient，使用自主上报模式");
             
             // 初始化 HTTP 上报
             initHttpReporter();
@@ -286,11 +291,11 @@ public class ReportFactory {
                 syncClientProvider = iterator.next();
                 useSyncClient = true;
                 enabledProtocols.put(ReportProtocol.SYNC_CLIENT, true);
-                LogFactory.getInstance().info("通过 SPI 发现 SyncClientProvider: {}", syncClientProvider.name());
+                LOGGER.info("通过 SPI 发现 SyncClientProvider: {}", syncClientProvider.name());
                 return;
             }
         } catch (Exception e) {
-            LogFactory.getInstance().debug("SPI 加载 SyncClientProvider 失败: {}", e.getMessage());
+            LOGGER.debug("SPI 加载 SyncClientProvider 失败: {}", e.getMessage());
         }
         
         // 降级方案：反射方式获取 SyncClient（兼容旧版）
@@ -323,7 +328,7 @@ public class ReportFactory {
                             try {
                                 publishRef.invoke(clientRef, topic, data);
                             } catch (Exception e) {
-                                LogFactory.getInstance().debug("反射调用 SyncClient.publish 失败: {}", e.getMessage());
+                                LOGGER.debug("反射调用 SyncClient.publish 失败: {}", e.getMessage());
                             }
                         }
                         @Override
@@ -333,13 +338,13 @@ public class ReportFactory {
                     };
                     useSyncClient = true;
                     enabledProtocols.put(ReportProtocol.SYNC_CLIENT, true);
-                    LogFactory.getInstance().info("通过反射降级方式初始化 SyncClient 成功");
+                    LOGGER.info("通过反射降级方式初始化 SyncClient 成功");
                 }
             }
         } catch (ClassNotFoundException e) {
-            LogFactory.getInstance().debug("未检测到 SyncClient 类，使用自主上报");
+            LOGGER.debug("未检测到 SyncClient 类，使用自主上报");
         } catch (Exception e) {
-            LogFactory.getInstance().debug("SyncClient 反射降级初始化失败: {}", e.getMessage());
+            LOGGER.debug("SyncClient 反射降级初始化失败: {}", e.getMessage());
         }
     }
 
@@ -355,7 +360,7 @@ public class ReportFactory {
             Method getContextMethod = holderClass.getMethod("getApplicationContext");
             return getContextMethod.invoke(null);
         } catch (Exception e) {
-            LogFactory.getInstance().debug("获取 Spring ApplicationContext 失败: {}", e.getMessage());
+            LOGGER.debug("获取 Spring ApplicationContext 失败: {}", e.getMessage());
         }
         return null;
     }
@@ -370,13 +375,13 @@ public class ReportFactory {
             enabledProtocols.put(ReportProtocol.HTTP, httpEnabled);
 
             if (!httpEnabled) {
-                LogFactory.getInstance().debug("HTTP 数据上报未启用");
+                LOGGER.debug("HTTP 数据上报未启用");
                 return;
             }
 
             String httpUrl = environmentFactory.getString(CONFIG_HTTP_URL, DEFAULT_HTTP_URL);
             if (httpUrl.isEmpty()) {
-                LogFactory.getInstance().warn("HTTP 上报 URL 未配置");
+                LOGGER.warn("HTTP 上报 URL 未配置");
                 enabledProtocols.put(ReportProtocol.HTTP, false);
                 return;
             }
@@ -386,9 +391,9 @@ public class ReportFactory {
 
             httpReporter = new HttpReporter(httpUrl, timeout, retries);
 
-            LogFactory.getInstance().info("HTTP 上报服务已配置，URL: {}", httpUrl);
+            LOGGER.info("HTTP 上报服务已配置，URL: {}", httpUrl);
         } catch (Exception e) {
-            LogFactory.getInstance().warn("HTTP 上报服务初始化失败: {}", e.getMessage());
+            LOGGER.warn("HTTP 上报服务初始化失败: {}", e.getMessage());
             enabledProtocols.put(ReportProtocol.HTTP, false);
         }
     }
@@ -398,8 +403,8 @@ public class ReportFactory {
      */
     private void registerShutdownHook() {
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            LogFactory.getInstance().info("开始关闭数据上报服务...");
-            LogFactory.getInstance().info("数据上报服务已关闭");
+            LOGGER.info("开始关闭数据上报服务...");
+            LOGGER.info("数据上报服务已关闭");
         }));
     }
 
@@ -469,7 +474,7 @@ public class ReportFactory {
             // 通过 SPI 接口调用，无需反射
             syncClientProvider.publish(topic, reportData);
         } catch (Exception e) {
-            LogFactory.getInstance().debug("SyncClient 联动上报失败: {}", e.getMessage());
+            LOGGER.debug("SyncClient 联动上报失败: {}", e.getMessage());
         }
     }
 
@@ -490,7 +495,7 @@ public class ReportFactory {
             ReportData reportData = ReportData.of(moduleType, event, data);
             httpReporter.reportAsync(objectMapper.writeValueAsString(reportData));
         } catch (Exception e) {
-            LogFactory.getInstance().debug("HTTP 上报失败: {}", e.getMessage());
+            LOGGER.debug("HTTP 上报失败: {}", e.getMessage());
         }
     }
 
@@ -506,7 +511,7 @@ public class ReportFactory {
             // 通过 ServerFactory 推送到 WebSocket 客户端
             ServerFactory.getInstance().publish(moduleType, event, data);
         } catch (Exception e) {
-            LogFactory.getInstance().debug("WebSocket 推送失败: {}", e.getMessage());
+            LOGGER.debug("WebSocket 推送失败: {}", e.getMessage());
         }
     }
 
@@ -530,7 +535,7 @@ public class ReportFactory {
             APP_PORT = String.valueOf(appPort);
         }
         APP_HOST = LOCAL_HOST;
-        LogFactory.getInstance().info("当前应用: {}:{}，本机IP: {}", project.getApplicationName(), APP_PORT, LOCAL_HOST);
+        LOGGER.info("当前应用: {}:{}，本机IP: {}", project.getApplicationName(), APP_PORT, LOCAL_HOST);
         
         // 触发 ComponentConnectionRecorder 刷新所有已有连接的 sourceHost 和 sourcePort
         ComponentConnectionRecorder.getInstance().refreshAllConnectionsWithRealInfo();
@@ -548,7 +553,7 @@ public class ReportFactory {
         
         // 验证端口号：端口不能小于 0
         if (instance.getSourcePort() < 0 || instance.getTargetPort() < 0) {
-            LogFactory.getInstance().debug("忽略无效端口的服务实例: source={}:{}, target={}:{}",
+            LOGGER.debug("忽略无效端口的服务实例: source={}:{}, target={}:{}",
                     instance.getSourceHost(), instance.getSourcePort(),
                     instance.getTargetHost(), instance.getTargetPort());
             return;

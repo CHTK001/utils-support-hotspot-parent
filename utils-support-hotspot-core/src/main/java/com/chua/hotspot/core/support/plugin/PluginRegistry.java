@@ -107,12 +107,12 @@ public class PluginRegistry {
      */
     public static void initialize() {
         ClassLoader classLoader = getPluginClassLoader();
-        LogFactory.getInstance().info("PluginRegistry.initialize 使用 classLoader: {}",
+        LOGGER.info("PluginRegistry.initialize 使用 classLoader: {}",
                 classLoader.getClass().getName());
 
         // 1. 尝试 SPI 自动发现
         Set<String> discoveredClasses = discoverPluginsViaSpi(classLoader);
-        LogFactory.getInstance().info("SPI 自动发现 {} 个 plugin", discoveredClasses.size());
+        LOGGER.info("SPI 自动发现 {} 个 plugin", discoveredClasses.size());
 
         if (!discoveredClasses.isEmpty()) {
             // SPI 发现成功
@@ -121,7 +121,7 @@ public class PluginRegistry {
             }
         } else {
             // 2. 兜底：使用硬编码列表
-            LogFactory.getInstance().info("SPI 未发现，使用 fallback 列表（{} 个）", FALLBACK_PLUGIN_CLASS_NAMES.length);
+            LOGGER.info("SPI 未发现，使用 fallback 列表（{} 个）", FALLBACK_PLUGIN_CLASS_NAMES.length);
             for (String className : FALLBACK_PLUGIN_CLASS_NAMES) {
                 tryLoadPlugin(className, classLoader);
             }
@@ -209,28 +209,28 @@ public class PluginRegistry {
             } catch (Throwable t) {
                 spring6Available = false;
             }
-            LogFactory.getInstance().info("spring6x plugin 跳过检查: className={}, spring6Available={}",
+            LOGGER.info("spring6x plugin 跳过检查: className={}, spring6Available={}",
                     className, spring6Available);
             if (!spring6Available) {
-                LogFactory.getInstance().warn("运行时未检测到 jakarta.servlet（Spring 6 特征），跳过 spring6x plugin（避免 NoClassDefFoundError）");
+                LOGGER.warn("运行时未检测到 jakarta.servlet（Spring 6 特征），跳过 spring6x plugin（避免 NoClassDefFoundError）");
                 return;
             }
-            LogFactory.getInstance().info("加载 spring6x plugin（运行时检测到 Spring 6 特征 jakarta.servlet）");
+            LOGGER.info("加载 spring6x plugin（运行时检测到 Spring 6 特征 jakarta.servlet）");
         }
 
         try {
             // initialize=true：触发 PluginRegistration 类的 static 块，调用 registerPlugin() 注册 Supplier。
             Class.forName(className, true, classLoader);
-            LogFactory.getInstance().debug("插件注册类加载成功: {} (classLoader={})",
+            LOGGER.debug("插件注册类加载成功: {} (classLoader={})",
                     className, classLoader.getClass().getName());
         } catch (ClassNotFoundException e) {
             // 插件模块不存在或对应 jar 未在 output/plugins/ 中，记录 debug 日志便于诊断
-            LogFactory.getInstance().warn("插件注册类找不到: {} (classLoader={})",
+            LOGGER.warn("插件注册类找不到: {} (classLoader={})",
                     className, classLoader.getClass().getName());
         } catch (LinkageError e) {
             // 插件模块存在但其静态初始化失败（依赖缺失等，例如 spring6x 引用 Spring 6 类，
             // 但当前应用是 Spring 5），跳过该插件以避免污染后续插件加载。
-            LogFactory.getInstance().warn("插件注册类加载失败（依赖缺失），跳过: {} - {}",
+            LOGGER.warn("插件注册类加载失败（依赖缺失），跳过: {} - {}",
                     className, e.getClass().getSimpleName());
         } catch (Exception e) {
             System.err.println("[ERROR] 加载插件注册类失败: " + className + ", " + e.getMessage());
@@ -252,12 +252,12 @@ public class PluginRegistry {
             Object v = m.invoke(null);
             if (v != null) {
                 String springVersion = v.toString();
-                LogFactory.getInstance().info("通过 SpringVersion 检测到 Spring 版本: {}", springVersion);
+                LOGGER.info("通过 SpringVersion 检测到 Spring 版本: {}", springVersion);
                 int dot = springVersion.indexOf('.');
                 return dot > 0 ? springVersion.substring(0, dot) : springVersion;
             }
         } catch (Throwable t) {
-            LogFactory.getInstance().debug("SpringVersion 检测失败: {}", t.getMessage());
+            LOGGER.debug("SpringVersion 检测失败: {}", t.getMessage());
         }
 
         // 备选方案：通过 spring-core jar manifest 的 Implementation-Version 字段读取版本
@@ -271,13 +271,13 @@ public class PluginRegistry {
                 is.close();
                 String version = mf.getMainAttributes().getValue("Implementation-Version");
                 if (version != null && !version.isEmpty()) {
-                    LogFactory.getInstance().info("通过 jar manifest 检测到 Spring 版本: {}", version);
+                    LOGGER.info("通过 jar manifest 检测到 Spring 版本: {}", version);
                     int dot = version.indexOf('.');
                     return dot > 0 ? version.substring(0, dot) : version;
                 }
             }
         } catch (Throwable t) {
-            LogFactory.getInstance().debug("Manifest 检测 Spring 版本失败: {}", t.getMessage());
+            LOGGER.debug("Manifest 检测 Spring 版本失败: {}", t.getMessage());
         }
 
         // 备选方案：通过字节码指令检测（Spring 6 的 SpringVersion 类相比 Spring 5 有不同常量）
@@ -292,7 +292,7 @@ public class PluginRegistry {
                     if (value != null) {
                         String s = value.toString();
                         if (s.matches("^\\d+\\.\\d+.*")) {
-                            LogFactory.getInstance().info("通过字段检测到 Spring 版本: {}", s);
+                            LOGGER.info("通过字段检测到 Spring 版本: {}", s);
                             int dot = s.indexOf('.');
                             return dot > 0 ? s.substring(0, dot) : s;
                         }
@@ -300,10 +300,10 @@ public class PluginRegistry {
                 }
             }
         } catch (Throwable t) {
-            LogFactory.getInstance().debug("字段检测 Spring 版本失败: {}", t.getMessage());
+            LOGGER.debug("字段检测 Spring 版本失败: {}", t.getMessage());
         }
 
-        LogFactory.getInstance().warn("无法检测 Spring 版本，spring6x plugin 兼容性检查已禁用");
+        LOGGER.warn("无法检测 Spring 版本，spring6x plugin 兼容性检查已禁用");
         return null;
     }
 

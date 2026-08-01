@@ -22,7 +22,10 @@ import java.util.*;
  */
 public class HotswapApi implements ApiEndpoint {
 
-    private static final LogFactory logger = LogFactory.getInstance();
+    /**
+     * 日志对象
+     */
+    private static final LogFactory LOGGER = LogFactory.getInstance();
     
     /**
      * 获取 Instrumentation
@@ -184,7 +187,7 @@ public class HotswapApi implements ApiEndpoint {
             return result;
             
         } catch (Exception e) {
-            logger.error("重载类失败: {}", e.getMessage());
+            LOGGER.error("重载类失败: {}", e.getMessage());
             return errorResult("重载失败: " + e.getMessage());
         }
     }
@@ -238,7 +241,7 @@ public class HotswapApi implements ApiEndpoint {
             return result;
             
         } catch (Exception e) {
-            logger.error("从文件重载类失败: {}", e.getMessage());
+            LOGGER.error("从文件重载类失败: {}", e.getMessage());
             return errorResult("重载失败: " + e.getMessage());
         }
     }

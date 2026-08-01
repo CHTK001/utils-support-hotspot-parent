@@ -19,7 +19,14 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public class DataRecorder {
     
-    private static final LogFactory logger = LogFactory.getInstance();
+    /**
+     * 日志对象
+     */
+    private static final LogFactory LOGGER = LogFactory.getInstance();
+
+    /**
+     * 单例实例（延迟初始化）
+     */
     private static DataRecorder INSTANCE;
     
     /**
@@ -73,11 +80,11 @@ public class DataRecorder {
         
         // 注册 JVM 关闭钩子
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            logger.info("DataRecorder 正在关闭，刷新所有剩余数据...");
+            LOGGER.info("DataRecorder 正在关闭，刷新所有剩余数据...");
             shutdown();
         }, "data-recorder-shutdown"));
         
-        logger.info("DataRecorder 初始化完成 [flushInterval={}ms, maxBufferSize={}]",
+        LOGGER.info("DataRecorder 初始化完成 [flushInterval={}ms, maxBufferSize={}]",
                    flushIntervalMs, maxBufferSize);
     }
     
@@ -117,7 +124,7 @@ public class DataRecorder {
                 System.currentTimeMillis()
             ));
         } catch (Exception e) {
-            logger.debug("记录链路追踪数据失败: {}", e.getMessage());
+            LOGGER.debug("记录链路追踪数据失败: {}", e.getMessage());
         }
     }
     
@@ -223,10 +230,10 @@ public class DataRecorder {
             
             if (totalCount > 0) {
                 int flushed = totalFlushed.addAndGet(totalCount);
-                logger.debug("刷新 {} 条数据到数据库（累计: {}）", totalCount, flushed);
+                LOGGER.debug("刷新 {} 条数据到数据库（累计: {}）", totalCount, flushed);
             }
         } catch (Exception e) {
-            logger.error("批量刷新数据失败: {}", e.getMessage());
+            LOGGER.error("批量刷新数据失败: {}", e.getMessage());
         }
     }
     
@@ -245,7 +252,7 @@ public class DataRecorder {
             batchInsertTraceRecords(storage, batch);
             return batch.size();
         } catch (Exception e) {
-            logger.error("刷新链路追踪数据失败: {}", e.getMessage());
+            LOGGER.error("刷新链路追踪数据失败: {}", e.getMessage());
             return 0;
         }
     }
@@ -265,7 +272,7 @@ public class DataRecorder {
             batchInsertLogRecords(storage, batch);
             return batch.size();
         } catch (Exception e) {
-            logger.error("刷新日志数据失败: {}", e.getMessage());
+            LOGGER.error("刷新日志数据失败: {}", e.getMessage());
             return 0;
         }
     }
@@ -285,7 +292,7 @@ public class DataRecorder {
             batchInsertExceptionRecords(storage, batch);
             return batch.size();
         } catch (Exception e) {
-            logger.error("刷新异常数据失败: {}", e.getMessage());
+            LOGGER.error("刷新异常数据失败: {}", e.getMessage());
             return 0;
         }
     }
@@ -305,7 +312,7 @@ public class DataRecorder {
             batchInsertQpsRecords(storage, batch);
             return batch.size();
         } catch (Exception e) {
-            logger.error("刷新 QPS 数据失败: {}", e.getMessage());
+            LOGGER.error("刷新 QPS 数据失败: {}", e.getMessage());
             return 0;
         }
     }
@@ -325,7 +332,7 @@ public class DataRecorder {
             batchInsertHttpPerfRecords(storage, batch);
             return batch.size();
         } catch (Exception e) {
-            logger.error("刷新 HTTP 性能数据失败: {}", e.getMessage());
+            LOGGER.error("刷新 HTTP 性能数据失败: {}", e.getMessage());
             return 0;
         }
     }
@@ -476,10 +483,10 @@ public class DataRecorder {
                 scheduler.shutdownNow();
             }
             
-            logger.info("DataRecorder 已关闭 [flushed={}, dropped={}]", 
+            LOGGER.info("DataRecorder 已关闭 [flushed={}, dropped={}]", 
                        totalFlushed.get(), totalDropped.get());
         } catch (Exception e) {
-            logger.error("关闭 DataRecorder 失败: {}", e.getMessage());
+            LOGGER.error("关闭 DataRecorder 失败: {}", e.getMessage());
         }
     }
     

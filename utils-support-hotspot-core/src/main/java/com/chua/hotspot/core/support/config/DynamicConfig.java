@@ -30,11 +30,15 @@ import java.util.concurrent.CopyOnWriteArrayList;
  */
 public class DynamicConfig {
 
-    /** 单例实例 */
+    /**
+     * 单例实例
+     */
     private static final DynamicConfig INSTANCE = new DynamicConfig();
 
-    /** 日志工厂 */
-    private final LogFactory logger = LogFactory.getInstance();
+    /**
+     * 日志对象
+     */
+    private static final LogFactory LOGGER = LogFactory.getInstance();
 
     /** 当前配置快照（线程安全） */
     private volatile JSONObject configSnapshot;
@@ -154,7 +158,7 @@ public class DynamicConfig {
         EnvironmentFactory.getInstance().set(key, value);
         // 触发监听器
         fireChange(key, oldValue, value);
-        logger.info("配置变更: {} = {} -> {}", key, oldValue, value);
+        LOGGER.info("配置变更: {} = {} -> {}", key, oldValue, value);
     }
 
     /**
@@ -175,7 +179,7 @@ public class DynamicConfig {
         String oldValue = configSnapshot.getString(key);
         configSnapshot.remove(key);
         fireChange(key, oldValue, null);
-        logger.info("配置移除: {} = {}", key, oldValue);
+        LOGGER.info("配置移除: {} = {}", key, oldValue);
     }
 
     // ==================== 监听器管理 ====================
@@ -226,7 +230,7 @@ public class DynamicConfig {
                 try {
                     listener.onChanged(key, oldValue, newValue);
                 } catch (Exception e) {
-                    logger.warn("配置监听器执行异常: key={}", key, e);
+                    LOGGER.warn("配置监听器执行异常: key={}", key, e);
                 }
             }
         }
@@ -235,7 +239,7 @@ public class DynamicConfig {
             try {
                 listener.onChanged(key, oldValue, newValue);
             } catch (Exception e) {
-                logger.warn("全局配置监听器执行异常: key={}", key, e);
+                LOGGER.warn("全局配置监听器执行异常: key={}", key, e);
             }
         }
     }
@@ -263,23 +267,23 @@ public class DynamicConfig {
         }
         File file = new File(configFilePath);
         if (!file.exists()) {
-            logger.warn("配置文件不存在: {}", configFilePath);
+            LOGGER.warn("配置文件不存在: {}", configFilePath);
             return false;
         }
 
         try (FileInputStream fis = new FileInputStream(file)) {
             JSONObject newConfig = JSON.parseObject(fis, JSONObject.class);
             if (newConfig == null) {
-                logger.warn("配置文件内容为空: {}", configFilePath);
+                LOGGER.warn("配置文件内容为空: {}", configFilePath);
                 return false;
             }
             // 合并配置（保留运行时动态设置的值，文件中的值覆盖）
             mergeConfig(newConfig);
             this.lastModified = file.lastModified();
-            logger.info("配置文件加载成功: {}, 配置项数: {}", configFilePath, newConfig.size());
+            LOGGER.info("配置文件加载成功: {}, 配置项数: {}", configFilePath, newConfig.size());
             return true;
         } catch (IOException e) {
-            logger.warn("加载配置文件失败: {}", configFilePath, e);
+            LOGGER.warn("加载配置文件失败: {}", configFilePath, e);
             return false;
         }
     }
@@ -299,7 +303,7 @@ public class DynamicConfig {
         }
         long currentModified = file.lastModified();
         if (currentModified > lastModified) {
-            logger.info("检测到配置文件变更，重新加载: {}", configFilePath);
+            LOGGER.info("检测到配置文件变更，重新加载: {}", configFilePath);
             return reloadFromFile();
         }
         return false;

@@ -32,6 +32,11 @@ import java.util.Map;
  */
 public class HandleApi implements ApiEndpoint {
 
+    /**
+     * 日志对象
+     */
+    private static final LogFactory LOGGER = LogFactory.getInstance();
+
     @Override
     public String name() {
         return "handle";
@@ -63,7 +68,7 @@ public class HandleApi implements ApiEndpoint {
                     return handleList(format);
             }
         } catch (Exception e) {
-            LogFactory.getInstance().error("获取句柄监控信息失败: {}", e.getMessage());
+            LOGGER.error("获取句柄监控信息失败: {}", e.getMessage());
             Map<String, Object> response = new LinkedHashMap<>();
             response.put("success", false);
             response.put("error", e.getMessage());
@@ -75,7 +80,7 @@ public class HandleApi implements ApiEndpoint {
      * 获取所有打开的句柄列表
      */
     private Object handleList(String format) {
-        LogFactory.getInstance().debug("获取句柄列表");
+        LOGGER.debug("获取句柄列表");
 
         if ("html".equals(format)) {
             return Listener.dump();
@@ -109,7 +114,7 @@ public class HandleApi implements ApiEndpoint {
      * 获取分类统计信息
      */
     private Object handleStats() {
-        LogFactory.getInstance().debug("获取句柄分类统计");
+        LOGGER.debug("获取句柄分类统计");
         Map<String, Object> stats = Listener.getStatisticsMap();
         stats.put("success", true);
         return stats;
@@ -119,7 +124,7 @@ public class HandleApi implements ApiEndpoint {
      * 获取潜在泄漏的句柄
      */
     private Object handleLeaks() {
-        LogFactory.getInstance().debug("获取泄漏句柄");
+        LOGGER.debug("获取泄漏句柄");
         List<Map<String, Object>> leaks = Listener.getLeakedHandles();
 
         Map<String, Object> response = new LinkedHashMap<>();
@@ -148,7 +153,7 @@ public class HandleApi implements ApiEndpoint {
      */
     private Object handleByType(HttpRequest request) {
         String typeStr = request.getParam("type", "");
-        LogFactory.getInstance().debug("按类型获取句柄: {}", typeStr);
+        LOGGER.debug("按类型获取句柄: {}", typeStr);
 
         Listener.HandleType type;
         try {
@@ -188,7 +193,7 @@ public class HandleApi implements ApiEndpoint {
         }
 
         Listener.setLeakThreshold(thresholdMs);
-        LogFactory.getInstance().info("泄漏检测阈值已设置为: {}ms", thresholdMs);
+        LOGGER.info("泄漏检测阈值已设置为: {}ms", thresholdMs);
 
         Map<String, Object> response = new LinkedHashMap<>();
         response.put("success", true);
@@ -213,7 +218,7 @@ public class HandleApi implements ApiEndpoint {
         }
 
         Listener.setHandleCountThreshold(threshold);
-        LogFactory.getInstance().info("句柄数量告警阈值已设置为: {}", threshold);
+        LOGGER.info("句柄数量告警阈值已设置为: {}", threshold);
 
         Map<String, Object> response = new LinkedHashMap<>();
         response.put("success", true);

@@ -22,9 +22,9 @@ import java.util.concurrent.locks.ReentrantLock;
 public class StorageService {
     
     /**
-     * 日志工厂实例
+     * 日志对象
      */
-    private static final LogFactory logger = LogFactory.getInstance();
+    private static final LogFactory LOGGER = LogFactory.getInstance();
 
     /**
      * 单例实例
@@ -53,7 +53,7 @@ public class StorageService {
             config.getFlushIntervalSeconds(), 
             TimeUnit.SECONDS);
         
-        logger.info("StorageService 初始化完成，刷新间隔: {}秒", config.getFlushIntervalSeconds());
+        LOGGER.info("StorageService 初始化完成，刷新间隔: {}秒", config.getFlushIntervalSeconds());
     }
     
     public static StorageService getInstance() {
@@ -65,7 +65,7 @@ public class StorageService {
      */
     public <T> void registerBuffer(String name, BatchWriter<T> writer) {
         buffers.putIfAbsent(name, new BufferQueue<>(name, writer, config.getBatchSize()));
-        logger.debug("注册存储缓冲区: {}", name);
+        LOGGER.debug("注册存储缓冲区: {}", name);
     }
     
     /**
@@ -75,7 +75,7 @@ public class StorageService {
     public <T> void add(String bufferName, T data) {
         BufferQueue<T> buffer = (BufferQueue<T>) buffers.get(bufferName);
         if (buffer == null) {
-            logger.warn("缓冲区不存在: {}", bufferName);
+            LOGGER.warn("缓冲区不存在: {}", bufferName);
             return;
         }
         buffer.add(data);
@@ -99,7 +99,7 @@ public class StorageService {
             try {
                 buffer.flush();
             } catch (Exception e) {
-                logger.error("刷新缓冲区失败: {}", buffer.name, e);
+                LOGGER.error("刷新缓冲区失败: {}", buffer.name, e);
             }
         }
     }
@@ -108,7 +108,7 @@ public class StorageService {
      * 关闭服务
      */
     public void shutdown() {
-        logger.info("关闭 StorageService...");
+        LOGGER.info("关闭 StorageService...");
         flushAll();
         scheduler.shutdown();
         try {
@@ -195,9 +195,9 @@ public class StorageService {
             if (toWrite != null && !toWrite.isEmpty()) {
                 try {
                     writer.writeBatch(toWrite);
-                    logger.debug("批量写入完成: buffer={}, count={}", name, toWrite.size());
+                    LOGGER.debug("批量写入完成: buffer={}, count={}", name, toWrite.size());
                 } catch (SQLException e) {
-                    logger.error("批量写入失败: buffer={}, count={}", name, toWrite.size(), e);
+                    LOGGER.error("批量写入失败: buffer={}, count={}", name, toWrite.size(), e);
                 }
             }
         }

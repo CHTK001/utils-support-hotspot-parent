@@ -25,10 +25,19 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public class ContainerQpsRecorder {
     
-    private static final LogFactory logger = LogFactory.getInstance();
+    /**
+     * 日志对象
+     */
+    private static final LogFactory LOGGER = LogFactory.getInstance();
+
+    /**
+     * 单例实例
+     */
     private static final ContainerQpsRecorder INSTANCE = new ContainerQpsRecorder();
-    
-    // 容器类型统计
+
+    /**
+     * 容器类型统计
+     */
     private final Map<String, ContainerStats> containerStatsMap = new ConcurrentHashMap<>();
     
     private ContainerQpsRecorder() {

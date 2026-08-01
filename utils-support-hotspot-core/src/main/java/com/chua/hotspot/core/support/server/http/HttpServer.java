@@ -41,6 +41,11 @@ public class HttpServer implements Server {
     private static final int DEFAULT_BACKLOG = 100;
 
     /**
+     * 日志对象
+     */
+    private static final LogFactory LOGGER = LogFactory.getInstance();
+
+    /**
      * 主机地址
      */
     private final String host;
@@ -103,7 +108,7 @@ public class HttpServer implements Server {
         if (this.authEnabled) {
             this.authUsername = env.getString("protocol.http.auth.username", "admin");
             this.authPassword = env.getString("protocol.http.auth.password", "admin");
-            LogFactory.getInstance().info("HTTP Basic Auth 已启用，用户名: {}", authUsername);
+            LOGGER.info("HTTP Basic Auth 已启用，用户名: {}", authUsername);
         }
     }
 
@@ -156,7 +161,7 @@ public class HttpServer implements Server {
     @Override
     public void start() {
         if (running) {
-            LogFactory.getInstance().warn("HTTP 服务器已在运行中");
+            LOGGER.warn("HTTP 服务器已在运行中");
             return;
         }
 
@@ -199,7 +204,7 @@ public class HttpServer implements Server {
                     try {
                         handler.handle(request, response);
                     } catch (Exception e) {
-                        LogFactory.getInstance().error("处理请求失败: path={}, error={}", path, e.getMessage());
+                        LOGGER.error("处理请求失败: path={}, error={}", path, e.getMessage());
                         response.error("服务器内部错误: " + e.getMessage());
                     }
                 } else {
@@ -209,9 +214,9 @@ public class HttpServer implements Server {
 
             server.start();
             running = true;
-            LogFactory.getInstance().info("HTTP 服务器启动成功: {}:{}", host, port);
+            LOGGER.info("HTTP 服务器启动成功: {}:{}", host, port);
         } catch (IOException e) {
-            LogFactory.getInstance().error("HTTP 服务器启动失败: {}", e.getMessage());
+            LOGGER.error("HTTP 服务器启动失败: {}", e.getMessage());
             throw new RuntimeException("HTTP 服务器启动失败", e);
         }
     }
@@ -224,7 +229,7 @@ public class HttpServer implements Server {
 
         server.stop(0);
         running = false;
-        LogFactory.getInstance().info("HTTP 服务器已停止");
+        LOGGER.info("HTTP 服务器已停止");
     }
 
     /**
@@ -321,7 +326,7 @@ public class HttpServer implements Server {
                 return true;
             }
         } catch (Exception e) {
-            LogFactory.getInstance().debug("解析认证头失败: {}", e.getMessage());
+            LOGGER.debug("解析认证头失败: {}", e.getMessage());
         }
 
         sendUnauthorized(response);

@@ -42,7 +42,14 @@ import java.util.Map;
  */
 public class AgentBootstrap {
 
-    /** 是否已初始化（幂等保护） */
+    /**
+     * 日志对象
+     */
+    private static final LogFactory LOGGER = LogFactory.getInstance();
+
+    /**
+     * 是否已初始化（幂等保护）
+     */
     private static volatile boolean initialized = false;
 
     /** 是否为 attach 模式 */
@@ -57,7 +64,7 @@ public class AgentBootstrap {
      */
     public static void main(String args, Instrumentation instrumentation, boolean isAttachMode) {
         if (initialized) {
-            LogFactory.getInstance().warn("AgentBootstrap 已初始化，跳过重复初始化（{}模式）",
+            LOGGER.warn("AgentBootstrap 已初始化，跳过重复初始化（{}模式）",
                     isAttachMode ? "attach" : "premain");
             return;
         }
@@ -80,7 +87,7 @@ public class AgentBootstrap {
             // 3. 初始化各个工厂（带幂等保护）
             InstrumentationFactory.getInstance().init(instrumentation);
             EnvironmentFactory.getInstance().init(args);
-            LogFactory.getInstance().init();
+            LOGGER.init();
             PluginFactory.getInstance().init();
 
             // 4. 初始化 Spy 桥接模式
@@ -88,7 +95,7 @@ public class AgentBootstrap {
             spyHandler.init();
             Spy.setHandler(spyHandler);
             AgentFactory.getInstance().setSpyHandler(spyHandler);
-            LogFactory.getInstance().info("Spy 桥接模式已启用，SpyHandler 已注册");
+            LOGGER.info("Spy 桥接模式已启用，SpyHandler 已注册");
 
             // 5. 初始化 AgentFactory（构建 ByteBuddy AgentBuilder 并安装）
             AgentFactory.getInstance().init(isAttachMode);
@@ -97,9 +104,9 @@ public class AgentBootstrap {
             ServerFactory.getInstance().init();
 
             initialized = true;
-            LogFactory.getInstance().info("Hotspot Agent 启动成功（{}模式）", modeLabel);
+            LOGGER.info("Hotspot Agent 启动成功（{}模式）", modeLabel);
         } catch (Exception e) {
-            LogFactory.getInstance().error("Hotspot Agent 启动失败: {}", e.getMessage(), e);
+            LOGGER.error("Hotspot Agent 启动失败: {}", e.getMessage(), e);
             if (!isAttachMode) {
                 // premain 模式下启动失败抛出异常，阻止 JVM 启动
                 throw new RuntimeException("Agent 启动失败", e);
@@ -169,9 +176,9 @@ public class AgentBootstrap {
     private static void initHotswapAgent(String args, Instrumentation instrumentation) {
         try {
             HotswapAgent.premain(args, instrumentation);
-            LogFactory.getInstance().info("HotswapAgent 初始化成功，热重载功能已启用");
+            LOGGER.info("HotswapAgent 初始化成功，热重载功能已启用");
         } catch (Throwable e) {
-            LogFactory.getInstance().warn("HotswapAgent 初始化失败（可能 JVM 不支持）: {}", e.getMessage());
+            LOGGER.warn("HotswapAgent 初始化失败（可能 JVM 不支持）: {}", e.getMessage());
         }
     }
 

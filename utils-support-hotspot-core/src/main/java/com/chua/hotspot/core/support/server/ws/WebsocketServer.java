@@ -33,8 +33,20 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 public class WebsocketServer {
 
+    /**
+     * WebSocket 握手魔术字符串（RFC 6455）
+     */
     private static final String WS_MAGIC_STRING = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
+
+    /**
+     * JSON 序列化器
+     */
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+
+    /**
+     * 日志对象
+     */
+    private static final LogFactory LOGGER = LogFactory.getInstance();
 
     private final int port;
     private final Set<WebSocketClient> clients = ConcurrentHashMap.newKeySet();
@@ -69,9 +81,9 @@ public class WebsocketServer {
             acceptThread.setDaemon(true);
             acceptThread.start();
 
-            LogFactory.getInstance().info("WebSocket 服务器启动成功，端口: {}", port);
+            LOGGER.info("WebSocket 服务器启动成功，端口: {}", port);
         } catch (IOException e) {
-            LogFactory.getInstance().error("WebSocket 服务器启动失败: {}", e.getMessage());
+            LOGGER.error("WebSocket 服务器启动失败: {}", e.getMessage());
         }
     }
 
@@ -85,7 +97,7 @@ public class WebsocketServer {
                 executor.submit(() -> handleClient(socket));
             } catch (IOException e) {
                 if (running.get()) {
-                    LogFactory.getInstance().debug("接受连接异常: {}", e.getMessage());
+                    LOGGER.debug("接受连接异常: {}", e.getMessage());
                 }
             }
         }
@@ -154,13 +166,13 @@ public class WebsocketServer {
             WebSocketClient client = new WebSocketClient(socket, in, out);
             clients.add(client);
 
-            LogFactory.getInstance().debug("WebSocket 客户端已连接: {}", socket.getRemoteSocketAddress());
+            LOGGER.debug("WebSocket 客户端已连接: {}", socket.getRemoteSocketAddress());
 
             // 处理消息
             handleMessages(client);
 
         } catch (Exception e) {
-            LogFactory.getInstance().debug("处理客户端异常: {}", e.getMessage());
+            LOGGER.debug("处理客户端异常: {}", e.getMessage());
         }
     }
 
@@ -183,11 +195,11 @@ public class WebsocketServer {
                 }
             }
         } catch (Exception e) {
-            LogFactory.getInstance().debug("读取消息异常: {}", e.getMessage());
+            LOGGER.debug("读取消息异常: {}", e.getMessage());
         } finally {
             clients.remove(client);
             client.close();
-            LogFactory.getInstance().debug("WebSocket 客户端已断开");
+            LOGGER.debug("WebSocket 客户端已断开");
         }
     }
 
@@ -261,11 +273,11 @@ public class WebsocketServer {
                 try {
                     client.sendMessage(json);
                 } catch (Exception e) {
-                    LogFactory.getInstance().debug("推送消息失败: {}", e.getMessage());
+                    LOGGER.debug("推送消息失败: {}", e.getMessage());
                 }
             }
         } catch (Exception e) {
-            LogFactory.getInstance().debug("序列化消息失败: {}", e.getMessage());
+            LOGGER.debug("序列化消息失败: {}", e.getMessage());
         }
     }
 
@@ -286,14 +298,14 @@ public class WebsocketServer {
             try {
                 serverSocket.close();
             } catch (IOException e) {
-                LogFactory.getInstance().debug("关闭服务器 Socket 异常: {}", e.getMessage());
+                LOGGER.debug("关闭服务器 Socket 异常: {}", e.getMessage());
             }
         }
 
         // 关闭线程池
         executor.shutdownNow();
 
-        LogFactory.getInstance().info("WebSocket 服务器已停止");
+        LOGGER.info("WebSocket 服务器已停止");
     }
 
     /**
