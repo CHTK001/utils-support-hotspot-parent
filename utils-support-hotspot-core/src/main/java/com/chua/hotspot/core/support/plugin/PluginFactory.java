@@ -22,17 +22,24 @@ import static com.chua.hotspot.core.support.version.JarVersionScanner.VERSION_CA
  */
 public class PluginFactory {
 
+    /** \u5355\u4f8b\u5b9e\u4f8b */
     static final PluginFactory INSTANCE = new PluginFactory();
 
+    /** \u65e5\u5fd7\u5de5\u5382 */
     final LogFactory logFactory = LogFactory.getInstance();
+    /** \u73af\u5883\u53d8\u91cf\u5de5\u5382 */
     final EnvironmentFactory environmentFactory = EnvironmentFactory.getInstance();
+    /** \u7981\u7528\u63d2\u4ef6\u5217\u8868 */
     final List<String> denyPlugin = new LinkedList<>();
 
+    /** \u63d2\u4ef6\u540d\u79f0\u5230\u5b9e\u4f8b\u7684\u6620\u5c04 */
     final Map<String, Plugin> pluginMap = new ConcurrentHashMap<>();
+    /** \u63d2\u4ef6\u5217\u8868\uff08\u6309\u52a0\u8f7d\u987a\u5e8f\uff09 */
     final List<Plugin> pluginList = new LinkedList<>();
+    /** \u70ed\u90e8\u7f72\u63d2\u4ef6\uff0c\u6309\u76ee\u6807\u7c7b\u578b\u5206\u7ec4 */
     final Map<Class<?>, List<Hotswap>> hotswaps = new ConcurrentHashMap<>();
 
-    /** 是否已初始化（幂等保护） */
+    /** \u662f\u5426\u5df2\u521d\u59cb\u5316\uff08\u5e42\u7b49\u4fdd\u62a4\uff09 */
     private volatile boolean initialized = false;
 
     private PluginFactory() {

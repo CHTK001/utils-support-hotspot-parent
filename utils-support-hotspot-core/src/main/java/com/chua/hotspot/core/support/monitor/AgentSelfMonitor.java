@@ -29,8 +29,14 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public class AgentSelfMonitor {
 
+    /**
+     * 单例实例
+     */
     private static final AgentSelfMonitor INSTANCE = new AgentSelfMonitor();
 
+    /**
+     * 日志对象
+     */
     private final LogFactory logger = LogFactory.getInstance();
 
     // ==================== 字节码增强统计 ====================
@@ -82,8 +88,102 @@ public class AgentSelfMonitor {
 
     // ==================== 启动时间 ====================
 
-    /** Agent 启动时间戳 */
+    /**
+     * Agent 启动时间戳（毫秒）
+     */
     private final long startTimeMs;
+
+    // ==================== 监控指标名称 ====================
+
+    /**
+     * 指标：增强类总数
+     */
+    private static final String METRIC_TRANSFORM_CLASS_TOTAL = "agent_transform_class_total";
+
+    /**
+     * 指标：增强方法总数
+     */
+    private static final String METRIC_TRANSFORM_METHOD_TOTAL = "agent_transform_method_total";
+
+    /**
+     * 指标：增强失败总数
+     */
+    private static final String METRIC_TRANSFORM_FAIL_TOTAL = "agent_transform_fail_total";
+
+    /**
+     * 指标：上报总数
+     */
+    private static final String METRIC_REPORT_TOTAL = "agent_report_total";
+
+    /**
+     * 指标：上报数据总数
+     */
+    private static final String METRIC_REPORT_DATA_TOTAL = "agent_report_data_total";
+
+    /**
+     * 指标：上报失败总数
+     */
+    private static final String METRIC_REPORT_FAIL_TOTAL = "agent_report_fail_total";
+
+    /**
+     * 指标：拦截异常总数
+     */
+    private static final String METRIC_INTERCEPT_EXCEPTION_TOTAL = "agent_intercept_exception_total";
+
+    /**
+     * 指标：插件注册总数
+     */
+    private static final String METRIC_PLUGIN_REGISTER_TOTAL = "agent_plugin_register_total";
+
+    /**
+     * 指标：增强类 Gauge
+     */
+    private static final String METRIC_TRANSFORMED_CLASSES = "agent_transformed_classes";
+
+    /**
+     * 指标：拦截方法 Gauge
+     */
+    private static final String METRIC_INTERCEPTED_METHODS = "agent_intercepted_methods";
+
+    /**
+     * 指标：增强失败 Gauge
+     */
+    private static final String METRIC_TRANSFORM_FAIL_COUNT = "agent_transform_fail_count";
+
+    /**
+     * 指标：上报次数 Gauge
+     */
+    private static final String METRIC_REPORT_COUNT = "agent_report_count";
+
+    /**
+     * 指标：上报数据量 Gauge
+     */
+    private static final String METRIC_REPORT_DATA_COUNT = "agent_report_data_count";
+
+    /**
+     * 指标：上报失败 Gauge
+     */
+    private static final String METRIC_REPORT_FAIL_COUNT = "agent_report_fail_count";
+
+    /**
+     * 指标：拦截调用次数 Gauge
+     */
+    private static final String METRIC_INTERCEPT_INVOKE_COUNT = "agent_intercept_invoke_count";
+
+    /**
+     * 指标：拦截异常 Gauge
+     */
+    private static final String METRIC_INTERCEPT_EXCEPTION_COUNT = "agent_intercept_exception_count";
+
+    /**
+     * 指标：注册插件 Gauge
+     */
+    private static final String METRIC_REGISTERED_PLUGINS = "agent_registered_plugins";
+
+    /**
+     * Agent 线程名前缀
+     */
+    private static final String AGENT_THREAD_PREFIX = "hotspot-";
 
     private AgentSelfMonitor() {
         this.startTimeMs = System.currentTimeMillis();
@@ -107,8 +207,8 @@ public class AgentSelfMonitor {
         interceptedMethodCount.addAndGet(methodCount);
         transformTimeNanos.addAndGet(costNanos);
         // 同步到 MetricsExporter
-        MetricsExporter.getInstance().increment("agent_transform_class_total");
-        MetricsExporter.getInstance().increment("agent_transform_method_total", methodCount);
+        MetricsExporter.getInstance().increment(METRIC_TRANSFORM_CLASS_TOTAL);
+        MetricsExporter.getInstance().increment(METRIC_TRANSFORM_METHOD_TOTAL, methodCount);
     }
 
     /**
@@ -116,7 +216,7 @@ public class AgentSelfMonitor {
      */
     public void recordTransformFail(String className) {
         transformFailCount.incrementAndGet();
-        MetricsExporter.getInstance().increment("agent_transform_fail_total");
+        MetricsExporter.getInstance().increment(METRIC_TRANSFORM_FAIL_TOTAL);
         logger.warn("类增强失败: {}", className);
     }
 
@@ -132,8 +232,8 @@ public class AgentSelfMonitor {
         reportCount.incrementAndGet();
         reportDataCount.addAndGet(dataCount);
         reportTimeMs.addAndGet(costMs);
-        MetricsExporter.getInstance().increment("agent_report_total");
-        MetricsExporter.getInstance().increment("agent_report_data_total", dataCount);
+        MetricsExporter.getInstance().increment(METRIC_REPORT_TOTAL);
+        MetricsExporter.getInstance().increment(METRIC_REPORT_DATA_TOTAL, dataCount);
     }
 
     /**
@@ -141,7 +241,7 @@ public class AgentSelfMonitor {
      */
     public void recordReportFail() {
         reportFailCount.incrementAndGet();
-        MetricsExporter.getInstance().increment("agent_report_fail_total");
+        MetricsExporter.getInstance().increment(METRIC_REPORT_FAIL_TOTAL);
     }
 
     // ==================== 拦截方法执行统计方法 ====================
@@ -161,7 +261,7 @@ public class AgentSelfMonitor {
      */
     public void recordInterceptException() {
         interceptExceptionCount.incrementAndGet();
-        MetricsExporter.getInstance().increment("agent_intercept_exception_total");
+        MetricsExporter.getInstance().increment(METRIC_INTERCEPT_EXCEPTION_TOTAL);
     }
 
     // ==================== 插件统计方法 ====================
@@ -172,7 +272,7 @@ public class AgentSelfMonitor {
     public void recordPluginRegister(String pluginName) {
         registeredPluginCount.incrementAndGet();
         pluginLoadCount.computeIfAbsent(pluginName, k -> new AtomicLong(0)).incrementAndGet();
-        MetricsExporter.getInstance().increment("agent_plugin_register_total");
+        MetricsExporter.getInstance().increment(METRIC_PLUGIN_REGISTER_TOTAL);
     }
 
     // ==================== 查询方法 ====================
@@ -290,7 +390,7 @@ public class AgentSelfMonitor {
         int agentThreadCount = 0;
         ThreadMXBean threadMXBean = ManagementFactory.getThreadMXBean();
         for (ThreadInfo info : threadMXBean.dumpAllThreads(false, false)) {
-            if (info.getThreadName().startsWith("hotspot-")) {
+            if (info.getThreadName().startsWith(AGENT_THREAD_PREFIX)) {
                 agentThreadCount++;
             }
         }
@@ -314,21 +414,21 @@ public class AgentSelfMonitor {
         MetricsExporter exporter = MetricsExporter.getInstance();
 
         // 字节码增强指标
-        exporter.setGauge("agent_transformed_classes", transformedClassCount.get());
-        exporter.setGauge("agent_intercepted_methods", interceptedMethodCount.get());
-        exporter.setGauge("agent_transform_fail_count", transformFailCount.get());
+        exporter.setGauge(METRIC_TRANSFORMED_CLASSES, transformedClassCount.get());
+        exporter.setGauge(METRIC_INTERCEPTED_METHODS, interceptedMethodCount.get());
+        exporter.setGauge(METRIC_TRANSFORM_FAIL_COUNT, transformFailCount.get());
 
         // 上报指标
-        exporter.setGauge("agent_report_count", reportCount.get());
-        exporter.setGauge("agent_report_data_count", reportDataCount.get());
-        exporter.setGauge("agent_report_fail_count", reportFailCount.get());
+        exporter.setGauge(METRIC_REPORT_COUNT, reportCount.get());
+        exporter.setGauge(METRIC_REPORT_DATA_COUNT, reportDataCount.get());
+        exporter.setGauge(METRIC_REPORT_FAIL_COUNT, reportFailCount.get());
 
         // 拦截执行指标
-        exporter.setGauge("agent_intercept_invoke_count", interceptInvokeCount.get());
-        exporter.setGauge("agent_intercept_exception_count", interceptExceptionCount.get());
+        exporter.setGauge(METRIC_INTERCEPT_INVOKE_COUNT, interceptInvokeCount.get());
+        exporter.setGauge(METRIC_INTERCEPT_EXCEPTION_COUNT, interceptExceptionCount.get());
 
         // 插件指标
-        exporter.setGauge("agent_registered_plugins", registeredPluginCount.get());
+        exporter.setGauge(METRIC_REGISTERED_PLUGINS, registeredPluginCount.get());
     }
 
     /**

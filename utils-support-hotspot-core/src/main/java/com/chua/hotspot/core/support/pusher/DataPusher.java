@@ -27,23 +27,98 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 public class DataPusher {
 
+    /**
+     * 单例实例
+     */
     private static final DataPusher INSTANCE = new DataPusher();
-    private static final LogFactory logger = LogFactory.getInstance();
 
-    // 推送定时器（单一线程池管理所有推送任务）
-    private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(2, r -> {
-        Thread t = new Thread(r, "data-pusher");
+    /**
+     * 日志对象
+     */
+    private static final LogFactory LOGGER = LogFactory.getInstance();
+
+    /**
+     * 调度线程池大小
+     */
+    private static final int SCHEDULER_POOL_SIZE = 2;
+
+    /**
+     * 推送线程名称
+     */
+    private static final String PUSHER_THREAD_NAME = "data-pusher";
+
+    /**
+     * JVM 信息推送初始延迟（秒）
+     */
+    private static final int JVM_PUSH_INITIAL_DELAY_SECONDS = 0;
+
+    /**
+     * JVM 信息推送间隔（秒）
+     */
+    private static final int JVM_PUSH_INTERVAL_SECONDS = 5;
+
+    /**
+     * 系统信息推送初始延迟（秒）
+     */
+    private static final int SYSTEM_PUSH_INITIAL_DELAY_SECONDS = 0;
+
+    /**
+     * 系统信息推送间隔（秒）
+     */
+    private static final int SYSTEM_PUSH_INTERVAL_SECONDS = 10;
+
+    /**
+     * QPS 信息推送初始延迟（秒）
+     */
+    private static final int QPS_PUSH_INITIAL_DELAY_SECONDS = 3;
+
+    /**
+     * QPS 信息推送间隔（秒）
+     */
+    private static final int QPS_PUSH_INTERVAL_SECONDS = 3;
+
+    /**
+     * 线程信息推送初始延迟（秒）
+     */
+    private static final int THREAD_PUSH_INITIAL_DELAY_SECONDS = 0;
+
+    /**
+     * 线程信息推送间隔（秒）
+     */
+    private static final int THREAD_PUSH_INTERVAL_SECONDS = 5;
+
+    /**
+     * 推送定时器（单一线程池管理所有推送任务）
+     */
+    private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(SCHEDULER_POOL_SIZE, r -> {
+        Thread t = new Thread(r, PUSHER_THREAD_NAME);
         t.setDaemon(true);
         return t;
     });
 
-    // 推送任务
+    /**
+     * JVM 信息推送任务句柄
+     */
     private ScheduledFuture<?> jvmPushTask;
+
+    /**
+     * 系统信息推送任务句柄
+     */
     private ScheduledFuture<?> systemPushTask;
+
+    /**
+     * QPS 信息推送任务句柄
+     */
     private ScheduledFuture<?> qpsPushTask;
+
+    /**
+     * 线程信息推送任务句柄
+     */
     private ScheduledFuture<?> threadPushTask;
 
-    // 启动标志
+    /**
+     * 启动标志（保证只启动一次）
+     */
     private final AtomicBoolean started = new AtomicBoolean(false);
 
     private DataPusher() {
@@ -58,19 +133,23 @@ public class DataPusher {
      */
     public synchronized void start() {
         if (started.compareAndSet(false, true)) {
-            // JVM 信息推送（每 5 秒）
-            jvmPushTask = scheduler.scheduleAtFixedRate(this::pushJvmInfo, 0, 5, TimeUnit.SECONDS);
-            
-            // 系统信息推送（每 10 秒）
-            systemPushTask = scheduler.scheduleAtFixedRate(this::pushSystemInfo, 0, 10, TimeUnit.SECONDS);
-            
-            // QPS 信息推送（每 3 秒）
-            qpsPushTask = scheduler.scheduleAtFixedRate(this::pushContainerQps, 3, 3, TimeUnit.SECONDS);
-            
-            // 线程信息推送（每 5 秒）
-            threadPushTask = scheduler.scheduleAtFixedRate(this::pushThreadInfo, 0, 5, TimeUnit.SECONDS);
-            
-            logger.info("数据推送器已启动");
+            // JVM 信息推送
+            jvmPushTask = scheduler.scheduleAtFixedRate(this::pushJvmInfo,
+                    JVM_PUSH_INITIAL_DELAY_SECONDS, JVM_PUSH_INTERVAL_SECONDS, TimeUnit.SECONDS);
+
+            // 系统信息推送
+            systemPushTask = scheduler.scheduleAtFixedRate(this::pushSystemInfo,
+                    SYSTEM_PUSH_INITIAL_DELAY_SECONDS, SYSTEM_PUSH_INTERVAL_SECONDS, TimeUnit.SECONDS);
+
+            // QPS 信息推送
+            qpsPushTask = scheduler.scheduleAtFixedRate(this::pushContainerQps,
+                    QPS_PUSH_INITIAL_DELAY_SECONDS, QPS_PUSH_INTERVAL_SECONDS, TimeUnit.SECONDS);
+
+            // 线程信息推送
+            threadPushTask = scheduler.scheduleAtFixedRate(this::pushThreadInfo,
+                    THREAD_PUSH_INITIAL_DELAY_SECONDS, THREAD_PUSH_INTERVAL_SECONDS, TimeUnit.SECONDS);
+
+            LOGGER.info("数据推送器已启动");
         }
     }
 
@@ -91,7 +170,7 @@ public class DataPusher {
             if (threadPushTask != null) {
                 threadPushTask.cancel(false);
             }
-            logger.info("数据推送器已停止");
+            LOGGER.info("数据推送器已停止");
         }
     }
 
@@ -103,7 +182,7 @@ public class DataPusher {
             Map<String, Object> data = collectJvmInfo();
             ServerFactory.getInstance().publish(ModuleType.JVM, "JVM_INFO", data);
         } catch (Exception e) {
-            logger.debug("JVM 信息推送失败: {}", e.getMessage());
+            LOGGER.debug("JVM 信息推送失败: {}", e.getMessage());
         }
     }
 
@@ -115,7 +194,7 @@ public class DataPusher {
             Map<String, Object> data = collectSystemInfo();
             ServerFactory.getInstance().publish(ModuleType.PERFORMANCE, "SYSTEM_INFO", data);
         } catch (Exception e) {
-            logger.debug("系统信息推送失败: {}", e.getMessage());
+            LOGGER.debug("系统信息推送失败: {}", e.getMessage());
         }
     }
 
@@ -135,7 +214,7 @@ public class DataPusher {
             
             ServerFactory.getInstance().publish(ModuleType.PERFORMANCE, "QPS_CONTAINER", data);
         } catch (Exception e) {
-            logger.debug("QPS 信息推送失败: {}", e.getMessage());
+            LOGGER.debug("QPS 信息推送失败: {}", e.getMessage());
         }
     }
 
@@ -147,7 +226,7 @@ public class DataPusher {
             Map<String, Object> data = collectThreadInfo();
             ServerFactory.getInstance().publish(ModuleType.JVM, "THREAD_INFO", data);
         } catch (Exception e) {
-            logger.debug("线程信息推送失败: {}", e.getMessage());
+            LOGGER.debug("线程信息推送失败: {}", e.getMessage());
         }
     }
 
@@ -158,7 +237,7 @@ public class DataPusher {
         try {
             ServerFactory.getInstance().publish(ModuleType.EXCEPTION, "EXCEPTION_UPDATE", exceptionData);
         } catch (Exception e) {
-            logger.debug("异常信息推送失败: {}", e.getMessage());
+            LOGGER.debug("异常信息推送失败: {}", e.getMessage());
         }
     }
 
@@ -169,7 +248,7 @@ public class DataPusher {
         try {
             ServerFactory.getInstance().publish(ModuleType.PERFORMANCE, "QPS_" + type, qpsData);
         } catch (Exception e) {
-            logger.debug("QPS 信息推送失败: {}", e.getMessage());
+            LOGGER.debug("QPS 信息推送失败: {}", e.getMessage());
         }
     }
 
@@ -180,7 +259,7 @@ public class DataPusher {
         try {
             ServerFactory.getInstance().publish(ModuleType.PERFORMANCE, "HTTP_PERF_UPDATE", perfData);
         } catch (Exception e) {
-            logger.debug("HTTP 性能信息推送失败: {}", e.getMessage());
+            LOGGER.debug("HTTP 性能信息推送失败: {}", e.getMessage());
         }
     }
 
@@ -191,7 +270,7 @@ public class DataPusher {
         try {
             ServerFactory.getInstance().publish(ModuleType.SQL, "SQL_RECORD", sqlData);
         } catch (Exception e) {
-            logger.debug("SQL 信息推送失败: {}", e.getMessage());
+            LOGGER.debug("SQL 信息推送失败: {}", e.getMessage());
         }
     }
 
@@ -202,7 +281,7 @@ public class DataPusher {
         try {
             ServerFactory.getInstance().publish(ModuleType.TRACE, "AGENT_TRACE", traceData);
         } catch (Exception e) {
-            logger.debug("链路追踪信息推送失败: {}", e.getMessage());
+            LOGGER.debug("链路追踪信息推送失败: {}", e.getMessage());
         }
     }
 
@@ -213,7 +292,7 @@ public class DataPusher {
         try {
             ServerFactory.getInstance().publish(ModuleType.LOG, "AGENT_LOG", logData);
         } catch (Exception e) {
-            logger.debug("日志信息推送失败: {}", e.getMessage());
+            LOGGER.debug("日志信息推送失败: {}", e.getMessage());
         }
     }
 
@@ -224,7 +303,7 @@ public class DataPusher {
         try {
             ServerFactory.getInstance().publish(ModuleType.SERVER, "AGENT_SERVER", serverData);
         } catch (Exception e) {
-            logger.debug("服务实例信息推送失败: {}", e.getMessage());
+            LOGGER.debug("服务实例信息推送失败: {}", e.getMessage());
         }
     }
 
@@ -235,7 +314,7 @@ public class DataPusher {
         try {
             ServerFactory.getInstance().publish(module, event, data);
         } catch (Exception e) {
-            logger.debug("数据推送失败: module={}, event={}, error={}", module, event, e.getMessage());
+            LOGGER.debug("数据推送失败: module={}, event={}, error={}", module, event, e.getMessage());
         }
     }
 

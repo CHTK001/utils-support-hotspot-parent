@@ -16,6 +16,7 @@ import java.io.IOException;
 public class EnvironmentFactory {
 
     private static final EnvironmentFactory INSTANCE = new EnvironmentFactory();
+    /** 配置JSON对象 */
     private JSONObject jsonObject;
 
     /** 是否已初始化（幂等保护） */

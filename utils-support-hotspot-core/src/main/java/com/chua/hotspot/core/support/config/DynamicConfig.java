@@ -30,8 +30,10 @@ import java.util.concurrent.CopyOnWriteArrayList;
  */
 public class DynamicConfig {
 
+    /** 单例实例 */
     private static final DynamicConfig INSTANCE = new DynamicConfig();
 
+    /** 日志工厂 */
     private final LogFactory logger = LogFactory.getInstance();
 
     /** 当前配置快照（线程安全） */

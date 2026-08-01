@@ -43,14 +43,17 @@ import static net.bytebuddy.matcher.ElementMatchers.*;
  */
 public class AgentFactory {
 
+    /** \u5355\u4f8b\u5b9e\u4f8b */
     static AgentFactory INSTANCE = new AgentFactory();
+    /** \u63d2\u4ef6\u5de5\u5382 */
     final PluginFactory pluginFactory = PluginFactory.getInstance();
+    /** \u65e5\u5fd7\u5de5\u5382 */
     final LogFactory logFactory = LogFactory.getInstance();
 
-    /** SpyHandler 实例，用于注册 className → pluginName 映射 */
+    /** SpyHandler \u5b9e\u4f8b\uff0c\u7528\u4e8e\u6ce8\u518c className \u2192 pluginName \u6620\u5c04 */
     private SpyHandlerImpl spyHandler;
 
-    /** 是否已初始化（幂等保护） */
+    /** \u662f\u5426\u5df2\u521d\u59cb\u5316\uff08\u5e42\u7b49\u4fdd\u62a4\uff09 */
     private volatile boolean initialized = false;
 
     AgentFactory() {

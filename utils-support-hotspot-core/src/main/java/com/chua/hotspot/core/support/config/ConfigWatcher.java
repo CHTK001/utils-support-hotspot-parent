@@ -38,6 +38,7 @@ public class ConfigWatcher {
     private final AtomicBoolean running = new AtomicBoolean(false);
 
     /** 监视服务 */
+    /** 监视服务 */
     private WatchService watchService;
 
     /** 执行线程池 */

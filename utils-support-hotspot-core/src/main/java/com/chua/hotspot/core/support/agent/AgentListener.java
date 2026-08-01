@@ -14,6 +14,7 @@ import net.bytebuddy.utility.JavaModule;
  * @author CH
  */
 public class AgentListener implements AgentBuilder.Listener {
+    /** 日志工厂 */
     final LogFactory logFactory = LogFactory.getInstance();
 
     @Override

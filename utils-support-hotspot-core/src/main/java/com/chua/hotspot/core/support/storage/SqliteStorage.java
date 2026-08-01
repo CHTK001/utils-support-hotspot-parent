@@ -22,30 +22,68 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  */
 public class SqliteStorage {
     
-    private static final LogFactory logger = LogFactory.getInstance();
+    /**
+     * 日志对象
+     */
+    private static final LogFactory LOGGER = LogFactory.getInstance();
+
+    /**
+     * 单例实例（延迟初始化）
+     */
     private static SqliteStorage INSTANCE;
-    
+
+    /**
+     * 默认应用名（未配置时使用）
+     */
+    private static final String DEFAULT_APP_NAME = "hotspot";
+
+    /**
+     * 数据库文件根目录
+     */
+    private static final String DB_BASE_DIR = "./agent/data/";
+
+    /**
+     * SQLite JDBC 驱动类名
+     */
+    private static final String SQLITE_JDBC_DRIVER = "org.sqlite.JDBC";
+
+    /**
+     * SQLite JDBC 连接 URL 前缀
+     */
+    private static final String SQLITE_JDBC_URL_PREFIX = "jdbc:sqlite:";
+
+    /**
+     * 数据库连接
+     */
     private Connection connection;
+
+    /**
+     * 读写锁（写操作加写锁，读操作加读锁）
+     */
     private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
+
+    /**
+     * 数据库文件路径
+     */
     private final String dbPath;
-    
+
     /**
      * 私有构造函数
      */
     private SqliteStorage() {
-        String appName = "hotspot";
+        String appName = DEFAULT_APP_NAME;
         try {
             // 优先从 Project 单例获取 applicationName
-            com.chua.hotspot.core.support.environment.Project project = 
-                com.chua.hotspot.core.support.environment.Project.getInstance();
+            com.chua.hotspot.core.support.environment.Project project =
+                    com.chua.hotspot.core.support.environment.Project.getInstance();
             if (project != null && project.getApplicationName() != null && !project.getApplicationName().isEmpty()) {
                 appName = project.getApplicationName();
             }
         } catch (Exception ignored) {
         }
-        
+
         // 数据库文件路径：./agent/data/{appName}.db
-        this.dbPath = "./agent/data/" + appName + ".db";
+        this.dbPath = DB_BASE_DIR + appName + ".db";
         initialize();
     }
     
@@ -83,12 +121,12 @@ public class SqliteStorage {
             if (config.isResetMode() && dbFile.exists()) {
                 boolean deleted = dbFile.delete();
                 if (deleted) {
-                    logger.info("RESET模式：已删除旧数据库文件: {}", dbPath);
+                    LOGGER.info("RESET模式：已删除旧数据库文件: {}", dbPath);
                 } else {
-                    logger.warn("无法删除旧数据库文件: {}", dbPath);
+                    LOGGER.warn("无法删除旧数据库文件: {}", dbPath);
                 }
             } else if (config.isPersistentMode() && dbFile.exists()) {
-                logger.info("PERSISTENT模式：保留历史数据，数据库文件: {}", dbPath);
+                LOGGER.info("PERSISTENT模式：保留历史数据，数据库文件: {}", dbPath);
             }
             
             // 加载 SQLite JDBC 驱动
@@ -105,9 +143,9 @@ public class SqliteStorage {
                 cleanupOldData();
             }
             
-            logger.info("SQLite 数据库初始化成功: {}", dbPath);
+            LOGGER.info("SQLite 数据库初始化成功: {}", dbPath);
         } catch (Exception e) {
-            logger.error("SQLite 数据库初始化失败: {}", e.getMessage());
+            LOGGER.error("SQLite 数据库初始化失败: {}", e.getMessage());
         }
     }
     
@@ -238,9 +276,9 @@ public class SqliteStorage {
             stmt.execute("CREATE INDEX IF NOT EXISTS idx_method_timestamp ON method_performance(timestamp)");
             stmt.execute("CREATE INDEX IF NOT EXISTS idx_method_signature ON method_performance(method_signature)");
             
-            logger.debug("SQLite 数据表创建完成");
+            LOGGER.debug("SQLite 数据表创建完成");
         } catch (SQLException e) {
-            logger.error("创建数据表失败: {}", e.getMessage());
+            LOGGER.error("创建数据表失败: {}", e.getMessage());
         } finally {
             lock.writeLock().unlock();
         }
@@ -271,14 +309,14 @@ public class SqliteStorage {
             int methodDeleted = stmt.executeUpdate(
                 "DELETE FROM method_performance WHERE timestamp < " + retentionTimestamp);
             
-            logger.info("清理过期数据完成: qps={}, component={}, trace={}, http={}, method={}",
+            LOGGER.info("清理过期数据完成: qps={}, component={}, trace={}, http={}, method={}",
                        qpsDeleted, compDeleted, traceDeleted, httpDeleted, methodDeleted);
             
             // 优化数据库（VACUUM）
             stmt.execute("VACUUM");
             
         } catch (SQLException e) {
-            logger.error("清理过期数据失败: {}", e.getMessage());
+            LOGGER.error("清理过期数据失败: {}", e.getMessage());
         } finally {
             lock.writeLock().unlock();
         }
@@ -302,7 +340,7 @@ public class SqliteStorage {
             pstmt.executeUpdate();
             
         } catch (SQLException e) {
-            logger.debug("插入 QPS 统计数据失败: {}", e.getMessage());
+            LOGGER.debug("插入 QPS 统计数据失败: {}", e.getMessage());
         } finally {
             lock.writeLock().unlock();
         }
@@ -337,7 +375,7 @@ public class SqliteStorage {
             connection.setAutoCommit(true);
             
         } catch (SQLException e) {
-            logger.debug("批量插入 QPS 统计数据失败: {}", e.getMessage());
+            LOGGER.debug("批量插入 QPS 统计数据失败: {}", e.getMessage());
             try {
                 connection.rollback();
                 connection.setAutoCommit(true);
@@ -378,7 +416,7 @@ public class SqliteStorage {
                 }
             }
         } catch (SQLException e) {
-            logger.debug("查询 QPS 历史数据失败: {}", e.getMessage());
+            LOGGER.debug("查询 QPS 历史数据失败: {}", e.getMessage());
         } finally {
             lock.readLock().unlock();
         }
@@ -404,7 +442,7 @@ public class SqliteStorage {
             pstmt.executeUpdate();
             
         } catch (SQLException e) {
-            logger.debug("插入组件统计数据失败: {}", e.getMessage());
+            LOGGER.debug("插入组件统计数据失败: {}", e.getMessage());
         } finally {
             lock.writeLock().unlock();
         }
@@ -439,7 +477,7 @@ public class SqliteStorage {
             connection.setAutoCommit(true);
             
         } catch (SQLException e) {
-            logger.debug("批量插入组件统计数据失败: {}", e.getMessage());
+            LOGGER.debug("批量插入组件统计数据失败: {}", e.getMessage());
             try {
                 connection.rollback();
                 connection.setAutoCommit(true);
@@ -480,7 +518,7 @@ public class SqliteStorage {
                 }
             }
         } catch (SQLException e) {
-            logger.debug("查询组件统计数据失败: {}", e.getMessage());
+            LOGGER.debug("查询组件统计数据失败: {}", e.getMessage());
         } finally {
             lock.readLock().unlock();
         }
@@ -505,7 +543,7 @@ public class SqliteStorage {
             pstmt.executeUpdate();
             
         } catch (SQLException e) {
-            logger.debug("插入日志记录失败: {}", e.getMessage());
+            LOGGER.debug("插入日志记录失败: {}", e.getMessage());
         } finally {
             lock.writeLock().unlock();
         }
@@ -553,7 +591,7 @@ public class SqliteStorage {
                 }
             }
         } catch (SQLException e) {
-            logger.debug("查询日志记录失败: {}", e.getMessage());
+            LOGGER.debug("查询日志记录失败: {}", e.getMessage());
         } finally {
             lock.readLock().unlock();
         }
@@ -580,7 +618,7 @@ public class SqliteStorage {
             pstmt.executeUpdate();
             
         } catch (SQLException e) {
-            logger.debug("插入链路追踪数据失败: {}", e.getMessage());
+            LOGGER.debug("插入链路追踪数据失败: {}", e.getMessage());
         } finally {
             lock.writeLock().unlock();
         }
@@ -616,7 +654,7 @@ public class SqliteStorage {
                 }
             }
         } catch (SQLException e) {
-            logger.debug("查询链路追踪数据失败: {}", e.getMessage());
+            LOGGER.debug("查询链路追踪数据失败: {}", e.getMessage());
         } finally {
             lock.readLock().unlock();
         }
@@ -652,7 +690,7 @@ public class SqliteStorage {
                 }
             }
         } catch (SQLException e) {
-            logger.debug("按 linkId 查询链路追踪数据失败: {}", e.getMessage());
+            LOGGER.debug("按 linkId 查询链路追踪数据失败: {}", e.getMessage());
         } finally {
             lock.readLock().unlock();
         }
@@ -686,9 +724,9 @@ public class SqliteStorage {
             // 优化数据库
             stmt.execute("VACUUM");
             
-            logger.info("清理了 {} 天前的数据", daysToKeep);
+            LOGGER.info("清理了 {} 天前的数据", daysToKeep);
         } catch (SQLException e) {
-            logger.error("清理过期数据失败: {}", e.getMessage());
+            LOGGER.error("清理过期数据失败: {}", e.getMessage());
         } finally {
             lock.writeLock().unlock();
         }
@@ -716,7 +754,7 @@ public class SqliteStorage {
             pstmt.executeUpdate();
             
         } catch (SQLException e) {
-            logger.debug("插入异常记录失败: {}", e.getMessage());
+            LOGGER.debug("插入异常记录失败: {}", e.getMessage());
         } finally {
             lock.writeLock().unlock();
         }
@@ -757,7 +795,7 @@ public class SqliteStorage {
                 }
             }
         } catch (SQLException e) {
-            logger.debug("查询异常记录失败: {}", e.getMessage());
+            LOGGER.debug("查询异常记录失败: {}", e.getMessage());
         } finally {
             lock.readLock().unlock();
         }
@@ -795,7 +833,7 @@ public class SqliteStorage {
                 }
             }
         } catch (SQLException e) {
-            logger.debug("按异常类型统计失败: {}", e.getMessage());
+            LOGGER.debug("按异常类型统计失败: {}", e.getMessage());
         } finally {
             lock.readLock().unlock();
         }
@@ -834,7 +872,7 @@ public class SqliteStorage {
                 }
             }
         } catch (SQLException e) {
-            logger.debug("查询异常详情失败: {}", e.getMessage());
+            LOGGER.debug("查询异常详情失败: {}", e.getMessage());
         } finally {
             lock.readLock().unlock();
         }
@@ -850,10 +888,10 @@ public class SqliteStorage {
         try {
             if (connection != null && !connection.isClosed()) {
                 connection.close();
-                logger.info("SQLite 数据库连接已关闭");
+                LOGGER.info("SQLite 数据库连接已关闭");
             }
         } catch (SQLException e) {
-            logger.error("关闭数据库连接失败: {}", e.getMessage());
+            LOGGER.error("关闭数据库连接失败: {}", e.getMessage());
         } finally {
             lock.writeLock().unlock();
         }

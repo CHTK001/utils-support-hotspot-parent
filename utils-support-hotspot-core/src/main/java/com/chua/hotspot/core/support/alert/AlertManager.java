@@ -41,8 +41,10 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public class AlertManager {
 
-    private static final LogFactory logger = LogFactory.getInstance();
+/** 日志工厂 */
+    private static final LogFactory logger = LogFactory.getInstance();"
 
+    /** 单例实例 */
     private static final AlertManager INSTANCE = new AlertManager();
 
     /**

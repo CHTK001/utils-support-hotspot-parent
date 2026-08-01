@@ -31,6 +31,9 @@ import java.util.stream.Collectors;
  */
 public class ReportFactory {
 
+    /**
+     * 单例实例
+     */
     private static final ReportFactory INSTANCE = new ReportFactory();
 
     /**
@@ -44,19 +47,90 @@ public class ReportFactory {
     private static final List<ServiceInstance> SERVICE_LIST = new LinkedList<>();
 
     /**
+     * 回环 IP 地址
+     */
+    private static final String LOOPBACK_IP = "127.0.0.1";
+
+    /**
+     * 默认应用端口
+     */
+    private static final String DEFAULT_APP_PORT = "8080";
+
+    /**
+     * SyncClient 类名（spring-support-report-client-starter）
+     * 保留用于反射降级方案
+     */
+    private static final String SYNC_CLIENT_CLASS = "com.chua.sync.support.client.SyncClient";
+
+    /**
+     * 默认应用主机
+     */
+    private static final String DEFAULT_APP_HOST = LOOPBACK_IP;
+
+    /**
+     * HTTP 上报启用配置键
+     */
+    private static final String CONFIG_HTTP_ENABLED = "hotspot.report.http.enabled";
+
+    /**
+     * HTTP 上报 URL 配置键
+     */
+    private static final String CONFIG_HTTP_URL = "hotspot.report.http.url";
+
+    /**
+     * HTTP 上报超时配置键
+     */
+    private static final String CONFIG_HTTP_TIMEOUT = "hotspot.report.http.timeout";
+
+    /**
+     * HTTP 上报重试次数配置键
+     */
+    private static final String CONFIG_HTTP_RETRIES = "hotspot.report.http.retries";
+
+    /**
+     * HTTP 上报默认禁用
+     */
+    private static final String DEFAULT_HTTP_ENABLED = "false";
+
+    /**
+     * HTTP 上报默认超时（毫秒）
+     */
+    private static final String DEFAULT_HTTP_TIMEOUT_MS = "5000";
+
+    /**
+     * HTTP 上报默认重试次数
+     */
+    private static final String DEFAULT_HTTP_RETRIES = "3";
+
+    /**
+     * HTTP 上报 URL 默认值（空字符串表示未配置）
+     */
+    private static final String DEFAULT_HTTP_URL = "";
+
+    /**
+     * 联动上报主题前缀
+     */
+    private static final String SYNC_TOPIC_PREFIX = "hotspot.";
+
+    /**
+     * Spring ApplicationContext Helper 类名
+     */
+    private static final String SPRING_CONTEXT_HELPER_CLASS = "com.chua.starter.common.support.application.ApplicationContextHelper";
+
+    /**
      * 本机 IP（排除 127.0.0.1 的真实 IP）
      */
-    public static String LOCAL_HOST = "127.0.0.1";
+    public static String LOCAL_HOST = LOOPBACK_IP;
 
     /**
      * 应用端口
      */
-    public static String APP_PORT = "8080";
+    public static String APP_PORT = DEFAULT_APP_PORT;
 
     /**
      * 应用主机
      */
-    public static String APP_HOST = "127.0.0.1";
+    public static String APP_HOST = DEFAULT_APP_HOST;
 
     static {
         try {
@@ -67,9 +141,11 @@ public class ReportFactory {
             LogFactory.getInstance().warn("获取本机IP失败: {}", e.getMessage());
         }
     }
-    
+
     /**
      * 获取真实的本机 IP 地址（排除 127.0.0.1 和回环地址）
+     *
+     * @return 真实的本机 IP 地址
      */
     private static String getRealLocalHost() {
         try {
@@ -93,25 +169,19 @@ public class ReportFactory {
         } catch (Exception e) {
             // 如果获取失败，使用默认方式
         }
-        
+
         // 降级方案
         try {
             InetAddress inet = InetAddress.getLocalHost();
             String ip = inet.getHostAddress();
-            if (!"127.0.0.1".equals(ip)) {
+            if (!LOOPBACK_IP.equals(ip)) {
                 return ip;
             }
         } catch (Exception ignored) {
         }
-        
-        return "127.0.0.1";
-    }
 
-    /**
-     * SyncClient 类名（spring-support-report-client-starter）
-     * 保留用于反射降级方案
-     */
-    private static final String SYNC_CLIENT_CLASS = "com.chua.sync.support.client.SyncClient";
+        return LOOPBACK_IP;
+    }
 
     /**
      * 上报协议类型
@@ -135,22 +205,35 @@ public class ReportFactory {
         SYNC_CLIENT
     }
 
+    /**
+     * 环境变量工厂
+     */
     private final EnvironmentFactory environmentFactory = EnvironmentFactory.getInstance();
+
+    /**
+     * JSON 序列化器
+     */
     private final ObjectMapper objectMapper = new ObjectMapper();
+
+    /**
+     * 已启用的上报协议集合
+     */
     private final Map<ReportProtocol, Boolean> enabledProtocols = new ConcurrentHashMap<>();
 
+    /**
+     * HTTP 上报器
+     */
     private HttpReporter httpReporter;
-    
+
     /**
      * SyncClient SPI 提供者（优先使用 SPI，替代反射方式）
      */
     private SyncClientProvider syncClientProvider;
-    
+
     /**
      * 是否使用联动上报
      */
     private boolean useSyncClient = false;
-    
 
     private ReportFactory() {
     }
@@ -267,7 +350,7 @@ public class ReportFactory {
      */
     private Object getSpringApplicationContext() {
         try {
-            Class<?> holderClass = Class.forName("com.chua.starter.common.support.application.ApplicationContextHelper",
+            Class<?> holderClass = Class.forName(SPRING_CONTEXT_HELPER_CLASS,
                     false, Thread.currentThread().getContextClassLoader());
             Method getContextMethod = holderClass.getMethod("getApplicationContext");
             return getContextMethod.invoke(null);
@@ -282,27 +365,27 @@ public class ReportFactory {
      */
     private void initHttpReporter() {
         try {
-            String httpEnabledStr = environmentFactory.getString("hotspot.report.http.enabled", "false");
+            String httpEnabledStr = environmentFactory.getString(CONFIG_HTTP_ENABLED, DEFAULT_HTTP_ENABLED);
             boolean httpEnabled = Boolean.parseBoolean(httpEnabledStr);
             enabledProtocols.put(ReportProtocol.HTTP, httpEnabled);
-            
+
             if (!httpEnabled) {
                 LogFactory.getInstance().debug("HTTP 数据上报未启用");
                 return;
             }
 
-            String httpUrl = environmentFactory.getString("hotspot.report.http.url", "");
+            String httpUrl = environmentFactory.getString(CONFIG_HTTP_URL, DEFAULT_HTTP_URL);
             if (httpUrl.isEmpty()) {
                 LogFactory.getInstance().warn("HTTP 上报 URL 未配置");
                 enabledProtocols.put(ReportProtocol.HTTP, false);
                 return;
             }
 
-            int timeout = Integer.parseInt(environmentFactory.getString("hotspot.report.http.timeout", "5000"));
-            int retries = Integer.parseInt(environmentFactory.getString("hotspot.report.http.retries", "3"));
-            
+            int timeout = Integer.parseInt(environmentFactory.getString(CONFIG_HTTP_TIMEOUT, DEFAULT_HTTP_TIMEOUT_MS));
+            int retries = Integer.parseInt(environmentFactory.getString(CONFIG_HTTP_RETRIES, DEFAULT_HTTP_RETRIES));
+
             httpReporter = new HttpReporter(httpUrl, timeout, retries);
-            
+
             LogFactory.getInstance().info("HTTP 上报服务已配置，URL: {}", httpUrl);
         } catch (Exception e) {
             LogFactory.getInstance().warn("HTTP 上报服务初始化失败: {}", e.getMessage());
@@ -378,8 +461,8 @@ public class ReportFactory {
 
         try {
             // 构建上报主题
-            String topic = "hotspot." + moduleType.name().toLowerCase() + "." + event;
-            
+            String topic = SYNC_TOPIC_PREFIX + moduleType.name().toLowerCase() + "." + event;
+
             // 使用 ReportData 包装上报数据
             ReportData reportData = ReportData.of(moduleType, event, data);
 
