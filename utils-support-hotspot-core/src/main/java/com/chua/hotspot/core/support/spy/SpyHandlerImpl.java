@@ -37,16 +37,24 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class SpyHandlerImpl implements SpyHandler {
 
-        /** \u65e5\u5fd7\u5de5\u5382 */
+    /**
+     * 日志对象
+     */
     private final LogFactory LOGGER = LogFactory.getInstance();
 
-    /** \u63d2\u4ef6\u540d\u5230\u5b9e\u4f8b\u7684\u6620\u5c04 */
+    /**
+     * 插件名到实例的映射
+     */
     private final Map<String, BytebuddyPlugin> pluginMap = new ConcurrentHashMap<>();
 
-    /** \u76ee\u6807\u7c7b\u540d\u5230\u63d2\u4ef6\u540d\u7684\u6620\u5c04\uff08\u7528\u4e8e\u5feb\u901f\u8def\u7531\uff09 */
+    /**
+     * 目标类名到插件名的映射（用于快速路由）
+     */
     private final Map<String, String> classPluginMap = new ConcurrentHashMap<>();
 
-    /** \u662f\u5426\u5df2\u521d\u59cb\u5316 */
+    /**
+     * 是否已初始化
+     */
     private volatile boolean initialized = false;
 
     /**

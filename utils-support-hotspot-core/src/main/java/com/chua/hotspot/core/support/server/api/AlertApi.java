@@ -26,7 +26,14 @@ import java.util.*;
  */
 public class AlertApi implements ApiEndpoint {
 
+    /**
+     * 日志对象
+     */
     private final LogFactory LOGGER = LogFactory.getInstance();
+
+    /**
+     * 告警管理器
+     */
     private final AlertManager alertManager = AlertManager.getInstance();
 
     @Override

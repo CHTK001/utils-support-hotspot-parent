@@ -1,5 +1,7 @@
 package com.chua.hotspot.core.support.server;
 
+import lombok.Data;
+
 /**
  * 服务实例类，用于表示一个服务的实例信息
  *
@@ -7,7 +9,13 @@ package com.chua.hotspot.core.support.server;
  * @version 1.0.0
  * @since 2024/02/05
  */
+@Data
 public class ServiceInstance {
+
+    /**
+     * 默认源类型
+     */
+    private static final String DEFAULT_SOURCE_NAME = "HOST";
 
     /**
      * 服务实例的名称
@@ -15,9 +23,9 @@ public class ServiceInstance {
     private String name;
 
     /**
-     * 源类型，默认为"HOST"
+     * 源类型，默认为 HOST
      */
-    private String sourceName = "HOST";
+    private String sourceName = DEFAULT_SOURCE_NAME;
 
     /**
      * 源主机地址
@@ -39,26 +47,8 @@ public class ServiceInstance {
      */
     private int targetPort;
 
+    /**
+     * 连接计数
+     */
     private int count;
-
-    public String getName() { return name; }
-    public void setName(String name) { this.name = name; }
-
-    public String getSourceName() { return sourceName; }
-    public void setSourceName(String sourceName) { this.sourceName = sourceName; }
-
-    public String getSourceHost() { return sourceHost; }
-    public void setSourceHost(String sourceHost) { this.sourceHost = sourceHost; }
-
-    public int getSourcePort() { return sourcePort; }
-    public void setSourcePort(int sourcePort) { this.sourcePort = sourcePort; }
-
-    public String getTargetHost() { return targetHost; }
-    public void setTargetHost(String targetHost) { this.targetHost = targetHost; }
-
-    public int getTargetPort() { return targetPort; }
-    public void setTargetPort(int targetPort) { this.targetPort = targetPort; }
-
-    public int getCount() { return count; }
-    public void setCount(int count) { this.count = count; }
 }

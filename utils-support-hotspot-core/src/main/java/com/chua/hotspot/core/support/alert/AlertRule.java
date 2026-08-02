@@ -1,6 +1,7 @@
 package com.chua.hotspot.core.support.alert;
 
 import com.chua.hotspot.core.support.enums.ModuleType;
+import lombok.Data;
 
 /**
  * 告警规则定义
@@ -19,7 +20,23 @@ import com.chua.hotspot.core.support.enums.ModuleType;
  * @since 2024/12/15
  * @version 4.0.0.34
  */
+@Data
 public class AlertRule {
+
+    /**
+     * 默认评估窗口（秒）
+     */
+    private static final int DEFAULT_WINDOW_SECONDS = 60;
+
+    /**
+     * 默认连续触发次数
+     */
+    private static final int DEFAULT_CONSECUTIVE_COUNT = 1;
+
+    /**
+     * 默认告警间隔（秒）
+     */
+    private static final int DEFAULT_ALERT_INTERVAL_SECONDS = 300;
 
     /**
      * 规则 ID
@@ -85,119 +102,29 @@ public class AlertRule {
      * 触发条件类型枚举
      */
     public enum ConditionType {
-        /** 阈值告警：指标超过阈值 */
+        /**
+         * 阈值告警：指标超过阈值
+         */
         THRESHOLD,
-        /** 速率告警：指标变化速率超过阈值 */
+        /**
+         * 速率告警：指标变化速率超过阈值
+         */
         RATE,
-        /** 计数告警：指标累计次数超过阈值 */
+        /**
+         * 计数告警：指标累计次数超过阈值
+         */
         COUNT,
-        /** 缺失告警：指标在指定时间内未上报 */
+        /**
+         * 缺失告警：指标在指定时间内未上报
+         */
         ABSENCE
     }
 
     public AlertRule() {
         this.enabled = true;
-        this.windowSeconds = 60;
-        this.consecutiveCount = 1;
-        this.alertIntervalSeconds = 300;
-    }
-
-    // ==================== Getters & Setters ====================
-
-    public String getId() {
-        return id;
-    }
-
-    public void setId(String id) {
-        this.id = id;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public String getDescription() {
-        return description;
-    }
-
-    public void setDescription(String description) {
-        this.description = description;
-    }
-
-    public ModuleType getModuleType() {
-        return moduleType;
-    }
-
-    public void setModuleType(ModuleType moduleType) {
-        this.moduleType = moduleType;
-    }
-
-    public String getMetric() {
-        return metric;
-    }
-
-    public void setMetric(String metric) {
-        this.metric = metric;
-    }
-
-    public ConditionType getConditionType() {
-        return conditionType;
-    }
-
-    public void setConditionType(ConditionType conditionType) {
-        this.conditionType = conditionType;
-    }
-
-    public double getThreshold() {
-        return threshold;
-    }
-
-    public void setThreshold(double threshold) {
-        this.threshold = threshold;
-    }
-
-    public AlertLevel getLevel() {
-        return level;
-    }
-
-    public void setLevel(AlertLevel level) {
-        this.level = level;
-    }
-
-    public int getWindowSeconds() {
-        return windowSeconds;
-    }
-
-    public void setWindowSeconds(int windowSeconds) {
-        this.windowSeconds = windowSeconds;
-    }
-
-    public int getConsecutiveCount() {
-        return consecutiveCount;
-    }
-
-    public void setConsecutiveCount(int consecutiveCount) {
-        this.consecutiveCount = consecutiveCount;
-    }
-
-    public int getAlertIntervalSeconds() {
-        return alertIntervalSeconds;
-    }
-
-    public void setAlertIntervalSeconds(int alertIntervalSeconds) {
-        this.alertIntervalSeconds = alertIntervalSeconds;
-    }
-
-    public boolean isEnabled() {
-        return enabled;
-    }
-
-    public void setEnabled(boolean enabled) {
-        this.enabled = enabled;
+        this.windowSeconds = DEFAULT_WINDOW_SECONDS;
+        this.consecutiveCount = DEFAULT_CONSECUTIVE_COUNT;
+        this.alertIntervalSeconds = DEFAULT_ALERT_INTERVAL_SECONDS;
     }
 
     @Override
