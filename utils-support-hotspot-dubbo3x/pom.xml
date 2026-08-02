@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
@@ -6,7 +6,7 @@
     <parent>
         <groupId>com.chua</groupId>
         <artifactId>utils-support-hotspot-parent</artifactId>
-        <version>4.0.0.33</version>
+        <version>4.0.0.42</version>
     </parent>
 
     <artifactId>utils-support-hotspot-dubbo3x</artifactId>
@@ -39,18 +39,12 @@
         <dependency>
             <groupId>com.chua</groupId>
             <artifactId>utils-support-hotspot-core</artifactId>
-            <version>4.0.0.33</version>
+            <version>4.0.0.42</version>
         </dependency>
         <dependency>
             <groupId>org.apache.dubbo</groupId>
             <artifactId>dubbo</artifactId>
             <version>3.0.0</version>
-                       <exclusions>
-                <exclusion>
-                    <artifactId>fastjson</artifactId>
-                    <groupId>com.alibaba</groupId>
-                </exclusion>
-            </exclusions>
         </dependency>
     </dependencies>
 </project>

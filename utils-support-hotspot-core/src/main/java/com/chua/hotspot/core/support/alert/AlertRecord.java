@@ -1,6 +1,7 @@
 package com.chua.hotspot.core.support.alert;
 
 import com.chua.hotspot.core.support.enums.ModuleType;
+import lombok.Data;
 
 /**
  * 告警记录
@@ -12,6 +13,7 @@ import com.chua.hotspot.core.support.enums.ModuleType;
  * @since 2024/12/15
  * @version 4.0.0.34
  */
+@Data
 public class AlertRecord {
 
     /**
@@ -76,104 +78,6 @@ public class AlertRecord {
 
     public AlertRecord() {
         this.timestamp = System.currentTimeMillis();
-    }
-
-    // ==================== Getters & Setters ====================
-
-    public String getId() {
-        return id;
-    }
-
-    public void setId(String id) {
-        this.id = id;
-    }
-
-    public String getRuleId() {
-        return ruleId;
-    }
-
-    public void setRuleId(String ruleId) {
-        this.ruleId = ruleId;
-    }
-
-    public String getRuleName() {
-        return ruleName;
-    }
-
-    public void setRuleName(String ruleName) {
-        this.ruleName = ruleName;
-    }
-
-    public AlertLevel getLevel() {
-        return level;
-    }
-
-    public void setLevel(AlertLevel level) {
-        this.level = level;
-    }
-
-    public ModuleType getModuleType() {
-        return moduleType;
-    }
-
-    public void setModuleType(ModuleType moduleType) {
-        this.moduleType = moduleType;
-    }
-
-    public String getMetric() {
-        return metric;
-    }
-
-    public void setMetric(String metric) {
-        this.metric = metric;
-    }
-
-    public double getCurrentValue() {
-        return currentValue;
-    }
-
-    public void setCurrentValue(double currentValue) {
-        this.currentValue = currentValue;
-    }
-
-    public double getThreshold() {
-        return threshold;
-    }
-
-    public void setThreshold(double threshold) {
-        this.threshold = threshold;
-    }
-
-    public String getMessage() {
-        return message;
-    }
-
-    public void setMessage(String message) {
-        this.message = message;
-    }
-
-    public long getTimestamp() {
-        return timestamp;
-    }
-
-    public void setTimestamp(long timestamp) {
-        this.timestamp = timestamp;
-    }
-
-    public String getApplicationName() {
-        return applicationName;
-    }
-
-    public void setApplicationName(String applicationName) {
-        this.applicationName = applicationName;
-    }
-
-    public String getHost() {
-        return host;
-    }
-
-    public void setHost(String host) {
-        this.host = host;
     }
 
     @Override

@@ -4,7 +4,6 @@ import com.chua.hotspot.core.support.agent.transform.TransformFactory;
 import com.chua.hotspot.core.support.agent.transform.VersionTransform;
 import com.chua.hotspot.core.support.inst.InstrumentationFactory;
 import com.chua.hotspot.core.support.log.LogFactory;
-import com.chua.hotspot.core.support.monitor.AgentSelfMonitor;
 import com.chua.hotspot.core.support.plugin.BytebuddyPlugin;
 import com.chua.hotspot.core.support.plugin.Plugin;
 import com.chua.hotspot.core.support.plugin.PluginFactory;
@@ -15,16 +14,16 @@ import net.bytebuddy.agent.builder.AgentBuilder;
 import net.bytebuddy.asm.Advice;
 import net.bytebuddy.description.type.TypeDescription;
 import net.bytebuddy.dynamic.DynamicType;
-import net.bytebuddy.implementation.MethodDelegation;
 import net.bytebuddy.matcher.ElementMatcher;
 import net.bytebuddy.matcher.ElementMatchers;
 
 import java.io.File;
+import java.nio.file.Path;
+import java.security.ProtectionDomain;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.RandomAccessFile;
 import java.nio.channels.FileChannel;
-import java.nio.file.Path;
 import java.util.zip.ZipFile;
 
 import static net.bytebuddy.matcher.ElementMatchers.*;
@@ -44,14 +43,29 @@ import static net.bytebuddy.matcher.ElementMatchers.*;
  */
 public class AgentFactory {
 
+    /**
+     * 单例实例
+     */
     static AgentFactory INSTANCE = new AgentFactory();
-    final PluginFactory pluginFactory = PluginFactory.getInstance();
-    final LogFactory logFactory = LogFactory.getInstance();
 
-    /** SpyHandler 实例，用于注册 className → pluginName 映射 */
+    /**
+     * 插件工厂
+     */
+    final PluginFactory pluginFactory = PluginFactory.getInstance();
+
+    /**
+     * 日志对象
+     */
+    final LogFactory LOGGER = LogFactory.getInstance();
+
+    /**
+     * SpyHandler 实例，用于注册 className → pluginName 映射
+     */
     private SpyHandlerImpl spyHandler;
 
-    /** 是否已初始化（幂等保护） */
+    /**
+     * 是否已初始化（幂等保护）
+     */
     private volatile boolean initialized = false;
 
     AgentFactory() {
@@ -81,7 +95,7 @@ public class AgentFactory {
      */
     public void init(boolean isAttachMode) {
         if (initialized) {
-            logFactory.warn("AgentFactory 已初始化，跳过重复初始化");
+            LOGGER.warn("AgentFactory 已初始化，跳过重复初始化");
             return;
         }
 
@@ -153,13 +167,13 @@ public class AgentFactory {
         ElementMatcher<? super net.bytebuddy.description.method.MethodDescription> methodMatcher = plugin.methodMatcher();
 
         if (typeMatcher == null || methodMatcher == null) {
-            logFactory.warn("插件 {} 的 type() 或 methodMatcher() 返回 null，跳过注册", plugin.name());
+            LOGGER.warn("插件 {} 的 type() 或 methodMatcher() 返回 null，跳过注册", plugin.name());
             return transform;
         }
 
         final String pluginName = plugin.name();
 
-        logFactory.debug("注册 Spy 插件: {}, type={}, methodMatcher={}", pluginName, typeMatcher, methodMatcher);
+        LOGGER.debug("注册 Spy 插件: {}, type={}, methodMatcher={}", pluginName, typeMatcher, methodMatcher);
 
         // 创建 Spy Advice Transformer
         AgentBuilder.Transformer spyTransformer = new AgentBuilder.Transformer() {
@@ -173,7 +187,7 @@ public class AgentFactory {
                 // 这样 Spy 回调时可以快速路由到正确的插件
                 String className = typeDescription.getName();
                 spyHandler.registerClassMapping(className, pluginName);
-                logFactory.debug("Spy 类名映射: {} → {}", className, pluginName);
+                LOGGER.debug("Spy 类名映射: {} → {}", className, pluginName);
 
                 return builder
                         .visit(Advice.to(SpyAdvice.Enter.class).on(methodMatcher))
@@ -213,9 +227,6 @@ public class AgentFactory {
 
 
 
-    /**
-     * 安装文件句柄监控
-     */
     private AgentBuilder.Identified.Extendable installFileHandleMonitor(
             AgentBuilder builder, AgentBuilder.Identified.Extendable transform) {
         try {
@@ -313,16 +324,19 @@ public class AgentFactory {
                                     .visit(Advice.to(CloseAdvice.class)
                                             .on(named("kill").and(takesNoArguments()))));
 
-            logFactory.info("文件句柄监控已安装");
+            LOGGER.info("文件句柄监控已安装");
 
         } catch (Exception e) {
-            logFactory.error("安装文件句柄监控失败: {}", e.getMessage(), e);
+            LOGGER.error("安装文件句柄监控失败: {}", e.getMessage(), e);
         }
         return transform;
     }
 
     // ==================== Advice 类定义 ====================
 
+    /**
+     * FileInputStream 打开通知
+     */
     public static class FileInputStreamOpenAdvice {
         @Advice.OnMethodExit(suppress = Throwable.class)
         public static void onExit(@Advice.This Object self, @Advice.Argument(0) File file) {
@@ -330,6 +344,9 @@ public class AgentFactory {
         }
     }
 
+    /**
+     * FileOutputStream 打开通知
+     */
     public static class FileOutputStreamOpenAdvice {
         @Advice.OnMethodExit(suppress = Throwable.class)
         public static void onExit(@Advice.This Object self, @Advice.Argument(0) File file) {
@@ -337,6 +354,9 @@ public class AgentFactory {
         }
     }
 
+    /**
+     * RandomAccessFile 打开通知
+     */
     public static class RandomAccessFileOpenAdvice {
         @Advice.OnMethodExit(suppress = Throwable.class)
         public static void onExit(@Advice.This Object self, @Advice.Argument(0) File file) {
@@ -344,6 +364,9 @@ public class AgentFactory {
         }
     }
 
+    /**
+     * ZipFile 打开通知
+     */
     public static class ZipFileOpenAdvice {
         @Advice.OnMethodExit(suppress = Throwable.class)
         public static void onExit(@Advice.This Object self, @Advice.Argument(0) File file) {
@@ -351,6 +374,9 @@ public class AgentFactory {
         }
     }
 
+    /**
+     * FileChannel 打开通知
+     */
     public static class FileChannelOpenAdvice {
         @Advice.OnMethodExit(suppress = Throwable.class)
         public static void onExit(@Advice.Return FileChannel channel, @Advice.Argument(0) Path path) {
@@ -360,6 +386,9 @@ public class AgentFactory {
         }
     }
 
+    /**
+     * 关闭通知
+     */
     public static class CloseAdvice {
         @Advice.OnMethodEnter(suppress = Throwable.class)
         public static void onEnter(@Advice.This Object self) {
@@ -367,6 +396,9 @@ public class AgentFactory {
         }
     }
 
+    /**
+     * Pipe 打开通知
+     */
     public static class PipeOpenAdvice {
         @Advice.OnMethodExit(suppress = Throwable.class)
         public static void onExit(@Advice.This Object self) {
@@ -374,6 +406,9 @@ public class AgentFactory {
         }
     }
 
+    /**
+     * Selector 打开通知
+     */
     public static class SelectorOpenAdvice {
         @Advice.OnMethodExit(suppress = Throwable.class)
         public static void onExit(@Advice.This Object self) {
@@ -381,6 +416,9 @@ public class AgentFactory {
         }
     }
 
+    /**
+     * Socket 打开通知
+     */
     public static class SocketOpenAdvice {
         @Advice.OnMethodExit(suppress = Throwable.class)
         public static void onExit(@Advice.This Object self) {
@@ -388,6 +426,9 @@ public class AgentFactory {
         }
     }
 
+    /**
+     * SocketChannel 打开通知
+     */
     public static class SocketChannelOpenAdvice {
         @Advice.OnMethodExit(suppress = Throwable.class)
         public static void onExit(@Advice.This Object self) {

@@ -28,7 +28,10 @@ import java.util.UUID;
  */
 public class DistributedTraceContext {
 
-    private static final LogFactory logger = LogFactory.getInstance();
+    /**
+     * 日志对象
+     */
+    private static final LogFactory LOGGER = LogFactory.getInstance();
 
     /**
      * W3C 标准传播头

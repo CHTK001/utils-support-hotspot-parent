@@ -1,31 +1,40 @@
-# Utils Support Hotspot Lettuce
+# utils-support-hotspot-lettuce
 
-Lettuce 热点监控模块，提供 Lettuce Redis 客户端的运行时监控和性能分析功能。
+Lettuce缓存操作热点监控模块
 
-## 功能特性
+---
 
-- **Lettuce 操作监控**：实时监控 Lettuce 命令执行情况
-- **性能指标收集**：响应时间、吞吐量、错误率等指标
-- **连接池监控**：连接池状态、活跃连接数、等待队列等
-- **慢查询检测**：自动识别和记录慢查询操作
-- **热点 Key 分析**：统计访问频率最高的 Key
-- **异常监控**：Lettuce 连接异常、超时等问题监控
-- **内存使用分析**：Redis 内存使用情况统计
+## 快速开始
 
-## 监控对象
+### 1. 添加依赖
 
-- Lettuce 客户端操作监控
-- Spring Data Redis Lettuce 操作监控
-- 连接池状态监控
-- 集群模式监控
+```xml
+<dependency>
+    <groupId>io.lettuce</groupId>
+    <artifactId>utils-support-hotspot-lettuce</artifactId>
+    <version>${project.version}</version>
+</dependency>
+```
 
-## 技术特点
+---
 
-- 基于字节码增强技术
-- 运行时动态监控
-- 低性能开销
-- 无侵入性设计
+## 功能概览
 
-## 版本
+| 类/接口 | 说明 |
+|---------|------|
+| `PluginRegistration` | Lettuce 插件注册 注意：Lettuce 与 Spring Data Redis 的集成插件已移至 spring5x 和 spring6x 模块 本模块仅 |
 
-4.0.0.33
+---
+
+## 配置说明
+
+本模块为零配置模块，引入依赖后即可使用。
+
+---
+
+## 依赖关系
+
+```
+utils-support-hotspot-lettuce
+├── utils-support-hotspot-core
+```

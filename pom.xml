@@ -28,7 +28,7 @@
     - 支持运行时动态增强
     - 低侵入性监控方案
 
-    版本：4.0.0.33
+    版本：4.0.0.42
 -->
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -39,7 +39,7 @@
     <groupId>com.chua</groupId>
     <artifactId>utils-support-hotspot-parent</artifactId>
     <packaging>pom</packaging>
-    <version>4.0.0.33</version>
+    <version>4.0.0.42</version>
 
     <!-- 子模块列表：各种热点监控组件 -->
     <modules>
@@ -72,6 +72,9 @@
         <module>utils-support-hotspot-oracle</module>
         <!-- SQL Server：SQL Server数据库监控 -->
         <module>utils-support-hotspot-sqlserver</module>
+        <!-- HikariCP：HikariCP连接池监控 -->
+        <!-- HikariCP：连接池监控 -->
+        <module>utils-support-hotspot-hikaricp</module>
 
         <!-- Web服务器监控 -->
         <!-- Tomcat9x：Tomcat 9.x容器监控 -->
@@ -162,6 +165,9 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <!-- Agent主类：Java Agent的premain方法入口 -->
         <premain>com.chua.hotspot.agent.support.Agent</premain>
+        <!-- ByteBuddy：统一版本管理，覆盖父/子模块的不同版本 -->
+        <bytebuddy.version>1.17.8</bytebuddy.version>
+        <lombok.version>1.18.46</lombok.version>
     </properties>
 
     <!-- 公共依赖：所有热点监控子模块都会继承 -->
@@ -170,7 +176,7 @@
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
-            <version>1.18.42</version>
+            <version>${lombok.version}</version>
             <scope>provided</scope>
         </dependency>
 
@@ -178,14 +184,14 @@
         <dependency>
             <groupId>net.bytebuddy</groupId>
             <artifactId>byte-buddy</artifactId>
-            <version>1.15.7</version>
+            <version>${bytebuddy.version}</version>
         </dependency>
 
         <!-- ByteBuddy Agent：ByteBuddy的Agent支持库 -->
         <dependency>
             <groupId>net.bytebuddy</groupId>
             <artifactId>byte-buddy-agent</artifactId>
-            <version>1.15.7</version>
+            <version>${bytebuddy.version}</version>
         </dependency>
 
         <!-- Javassist：Java字节码操作工具，用于动态修改类 -->
@@ -214,27 +220,110 @@
                         <path>
                             <groupId>org.projectlombok</groupId>
                             <artifactId>lombok</artifactId>
-                            <version>1.18.42</version>
+                                    <version>${lombok.version}</version>
                         </path>
                     </annotationProcessorPaths>
                 </configuration>
+            </plugin>
+            <!--
+                Maven Antrun Plugin：聚合所有子模块构建产物到父项目 output/ 目录
+                解决以下问题：
+                - core 模块的 copy-plugins 只复制 core 自身依赖，不包含其他子模块 jar
+                - 用户需要在每个子模块手动 mvn install 才能被 core 看到
+                - 现在：任意子模块构建后自动复制到 output/plugins/ 和 output/java8/
+            -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <version>3.1.0</version>
+                <executions>
+                    <execution>
+                        <id>aggregate-output-plugins</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                        <configuration>
+                            <target>
+                                <!-- 创建聚合目录 -->
+                                <mkdir dir="${maven.multiModuleProjectDirectory}/output"/>
+                                <mkdir dir="${maven.multiModuleProjectDirectory}/output/plugins"/>
+                                <mkdir dir="${maven.multiModuleProjectDirectory}/output/java8"/>
+
+                                <!--
+                                    遍历所有子模块：复制 utils-support-hotspot-* 目录下的 target/*.jar 平铺到 output/libs/ 和 output/plugins/
+                                    output/libs/：放入系统 classloader 可见的路径（解决 bytebuddy MethodDelegation 嵌入类引用问题）
+                                    output/plugins/：放入 HotspotPluginClassLoader 可见的路径（plugin classloader）
+                                    排除 utils-support-hotspot-core、utils-support-hotspot-spy（这两个由 core 模块的 copy-to-output 处理）
+                                    排除 utils-support-hotspot-test-* 与 utils-support-hotspot-agent（agent 由 java8 profile 自己处理，test-* 不需要）
+                                    注意：fileset 提取文件名后配合 mapper type=flatten 平铺到目录
+                                -->
+                                <copy todir="${maven.multiModuleProjectDirectory}/output/plugins" failonerror="false">
+                                    <fileset dir="${maven.multiModuleProjectDirectory}">
+                                        <include name="utils-support-hotspot-*/target/utils-support-hotspot-*-4.0.0.42.jar"/>
+                                        <exclude name="utils-support-hotspot-core/target/**"/>
+                                        <exclude name="utils-support-hotspot-spy/target/**"/>
+                                        <exclude name="utils-support-hotspot-agent/target/**"/>
+                                        <exclude name="utils-support-hotspot-test-*/target/**"/>
+                                        <exclude name="utils-support-hotspot-ui/target/**"/>
+                                    </fileset>
+                                    <!-- 平铺：只保留文件名 -->
+                                    <mapper type="flatten"/>
+                                </copy>
+
+                                <!--
+                                    同时复制到 output/libs/，使 plugin 类引用能在应用 classloader 中解析。
+                                    这样当 bytebuddy MethodDelegation.to(plugin.class) 把 plugin 类引用嵌入到目标字节码时，
+                                    应用运行时能通过系统 classloader 找到该 plugin 类（前提：jakarta 兼容性检查通过）。
+                                -->
+                                <copy todir="${maven.multiModuleProjectDirectory}/output/libs" failonerror="false">
+                                    <fileset dir="${maven.multiModuleProjectDirectory}">
+                                        <include name="utils-support-hotspot-*/target/utils-support-hotspot-*-4.0.0.42.jar"/>
+                                        <exclude name="utils-support-hotspot-core/target/**"/>
+                                        <exclude name="utils-support-hotspot-spy/target/**"/>
+                                        <exclude name="utils-support-hotspot-agent/target/**"/>
+                                        <exclude name="utils-support-hotspot-test-*/target/**"/>
+                                        <exclude name="utils-support-hotspot-ui/target/**"/>
+                                    </fileset>
+                                    <mapper type="flatten"/>
+                                </copy>
+
+                                <!-- 清理可能残留的同名目录（防增量构建留下历史 jar） -->
+                                <delete>
+                                    <fileset dir="${maven.multiModuleProjectDirectory}/output/plugins" includes="*-4.0.0.42/"/>
+                                </delete>
+
+                                <echo message="已聚合所有子模块 jar 到: ${maven.multiModuleProjectDirectory}/output/plugins"/>
+                            </target>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>
 
     <!-- 分发管理：配置Maven仓库发布地址 -->
-    <distributionManagement>
-        <!-- 正式版本发布仓库 -->
+<repositories>
         <repository>
-            <id>boren001</id>
-            <name>boren001</name>
-            <url>http://192.168.110.100:8081/repository/maven-releases/</url>
+            <id>projectlombok.org</id>
+            <name>Project Lombok Edge Releases</name>
+            <url>https://projectlombok.org/edge-releases</url>
+            <releases>
+                <enabled>true</enabled>
+            </releases>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+        </repository>
+    </repositories>
+    <distributionManagement>
+        <repository>
+            <id>2676178-release-jmLEdB</id>
+            <url>https://packages.aliyun.com/6a62fa1d287d37b037a68ee8/maven/2676178-release-jmledb</url>
         </repository>
         <snapshotRepository>
-            <id>boren001</id>
-            <name>boren001</name>
-            <url>http://192.168.110.100:8081/repository/maven-releases/</url>
+            <id>2676178-snapshot-FwAJpk</id>
+            <url>https://packages.aliyun.com/6a62fa1d287d37b037a68ee8/maven/2676178-snapshot-fwajpk</url>
         </snapshotRepository>
     </distributionManagement>
-
 </project>

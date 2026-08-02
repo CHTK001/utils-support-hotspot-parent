@@ -14,7 +14,9 @@ import java.util.jar.JarFile;
 public class InstrumentationFactory {
 
     static final InstrumentationFactory INSTANCE = new InstrumentationFactory();
+    /** 类名到Class的缓存 */
     private final Map<String, Class<?>> cache = new ConcurrentHashMap<>();
+    /** Instrumentation实例 */
     public Instrumentation instrumentation;
 
     /** 是否已初始化（幂等保护） */

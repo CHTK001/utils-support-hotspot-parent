@@ -41,14 +41,24 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public class AlertManager {
 
-    private static final LogFactory logger = LogFactory.getInstance();
+/**
+ * 日志对象
+ */
+    private static final LogFactory LOGGER = LogFactory.getInstance();
 
+    /**
+     * 单例实例
+     */
     private static final AlertManager INSTANCE = new AlertManager();
 
     /**
      * 最近告警记录（限制 500 条）
      */
     private final ConcurrentLinkedQueue<AlertRecord> recentAlerts = new ConcurrentLinkedQueue<>();
+
+    /**
+     * 最近告警记录最大数量
+     */
     private static final int MAX_RECENT_ALERTS = 500;
 
     /**
@@ -98,13 +108,13 @@ public class AlertManager {
      */
     public void addRule(AlertRule rule) {
         if (rule == null || rule.getId() == null || rule.getId().isEmpty()) {
-            logger.warn("告警规则 ID 不能为空");
+            LOGGER.warn("告警规则 ID 不能为空");
             return;
         }
         rules.put(rule.getId(), rule);
         // 更新指标索引
         metricRuleIndex.computeIfAbsent(rule.getMetric(), k -> new ArrayList<>()).add(rule);
-        logger.info("注册告警规则: {} [metric={}, threshold={}, level={}]",
+        LOGGER.info("注册告警规则: {} [metric={}, threshold={}, level={}]",
                 rule.getName(), rule.getMetric(), rule.getThreshold(), rule.getLevel());
     }
 
@@ -122,7 +132,7 @@ public class AlertManager {
             }
             consecutiveHits.remove(ruleId);
             lastAlertTime.remove(ruleId);
-            logger.info("移除告警规则: {}", removed.getName());
+            LOGGER.info("移除告警规则: {}", removed.getName());
         }
     }
 
@@ -271,7 +281,7 @@ public class AlertManager {
         // 通过 ReportFactory 上报告警事件
         ReportFactory.report(ModuleType.EXCEPTION, "ALERT", record);
 
-        logger.warn("告警触发: {}", record.getMessage());
+        LOGGER.warn("告警触发: {}", record.getMessage());
     }
 
     // ==================== 告警查询 ====================

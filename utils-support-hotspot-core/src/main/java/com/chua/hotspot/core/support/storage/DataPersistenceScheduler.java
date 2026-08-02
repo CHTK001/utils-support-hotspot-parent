@@ -19,23 +19,48 @@ import java.util.concurrent.TimeUnit;
  */
 public class DataPersistenceScheduler {
     
-    private static final LogFactory logger = LogFactory.getInstance();
+    /**
+     * 日志对象
+     */
+    private static final LogFactory LOGGER = LogFactory.getInstance();
+
+    /**
+     * 单例实例
+     */
     private static final DataPersistenceScheduler INSTANCE = new DataPersistenceScheduler();
-    
-    // 持久化间隔（秒）
+
+    /**
+     * 持久化任务初始延迟（秒）
+     */
+    private static final int PERSIST_INITIAL_DELAY_SECONDS = 30;
+
+    /**
+     * 持久化任务执行间隔（秒）
+     */
     private static final int PERSIST_INTERVAL_SECONDS = 30;
-    
-    // 定时任务调度器
+
+    /**
+     * 调度器关闭等待超时（秒）
+     */
+    private static final int SHUTDOWN_TIMEOUT_SECONDS = 5;
+
+    /**
+     * 定时任务调度器（单线程、守护线程）
+     */
     private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor(r -> {
         Thread t = new Thread(r, "DataPersistenceScheduler");
         t.setDaemon(true);
         return t;
     });
-    
-    // 注册的持久化任务
+
+    /**
+     * 已注册的持久化任务列表
+     */
     private final List<PersistenceTask> tasks = new ArrayList<>();
-    
-    // 是否已启动
+
+    /**
+     * 调度器是否已启动（volatile 保证多线程可见性）
+     */
     private volatile boolean started = false;
     
     private DataPersistenceScheduler() {
@@ -56,18 +81,18 @@ public class DataPersistenceScheduler {
     public synchronized void register(PersistenceTask task) {
         if (task != null && !tasks.contains(task)) {
             tasks.add(task);
-            logger.debug("注册持久化任务: {}", task.getName());
+            LOGGER.debug("注册持久化任务: {}", task.getName());
         }
     }
-    
+
     /**
      * 取消注册持久化任务
-     * 
+     *
      * @param task 持久化任务
      */
     public synchronized void unregister(PersistenceTask task) {
         tasks.remove(task);
-        logger.debug("取消注册持久化任务: {}", task.getName());
+        LOGGER.debug("取消注册持久化任务: {}", task.getName());
     }
     
     /**
@@ -78,11 +103,11 @@ public class DataPersistenceScheduler {
             return;
         }
         
-        scheduler.scheduleAtFixedRate(this::persistAll, 
-            PERSIST_INTERVAL_SECONDS, PERSIST_INTERVAL_SECONDS, TimeUnit.SECONDS);
-        
+        scheduler.scheduleAtFixedRate(this::persistAll,
+                PERSIST_INITIAL_DELAY_SECONDS, PERSIST_INTERVAL_SECONDS, TimeUnit.SECONDS);
+
         started = true;
-        logger.info("数据持久化调度器已启动，间隔: {}秒", PERSIST_INTERVAL_SECONDS);
+        LOGGER.info("数据持久化调度器已启动，间隔: {}秒", PERSIST_INTERVAL_SECONDS);
     }
     
     /**
@@ -98,16 +123,16 @@ public class DataPersistenceScheduler {
         
         scheduler.shutdown();
         try {
-            if (!scheduler.awaitTermination(5, TimeUnit.SECONDS)) {
+            if (!scheduler.awaitTermination(SHUTDOWN_TIMEOUT_SECONDS, TimeUnit.SECONDS)) {
                 scheduler.shutdownNow();
             }
         } catch (InterruptedException e) {
             scheduler.shutdownNow();
             Thread.currentThread().interrupt();
         }
-        
+
         started = false;
-        logger.info("数据持久化调度器已停止");
+        LOGGER.info("数据持久化调度器已停止");
     }
     
     /**
@@ -118,7 +143,7 @@ public class DataPersistenceScheduler {
             try {
                 task.persist();
             } catch (Exception e) {
-                logger.debug("持久化任务 {} 执行失败: {}", task.getName(), e.getMessage());
+                LOGGER.debug("持久化任务 {} 执行失败: {}", task.getName(), e.getMessage());
             }
         }
     }

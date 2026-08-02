@@ -13,8 +13,11 @@ import com.chua.hotspot.core.support.log.LogFactory;
  */
 public class StorageConfig {
     
-    private static final LogFactory logger = LogFactory.getInstance();
-    
+    /**
+     * 日志对象
+     */
+    private static final LogFactory LOGGER = LogFactory.getInstance();
+
     /**
      * 存储模式
      */
@@ -59,7 +62,7 @@ public class StorageConfig {
                                    System.getenv("HOTSPOT_STORAGE_FLUSH_INTERVAL"));
         this.flushIntervalSeconds = parseIntOrDefault(flushIntervalStr, 30);
         
-        logger.info("Storage配置: mode={}, retentionDays={}, batchSize={}, flushInterval={}s",
+        LOGGER.info("Storage配置: mode={}, retentionDays={}, batchSize={}, flushInterval={}s",
                     mode, retentionDays, batchSize, flushIntervalSeconds);
     }
     
@@ -126,7 +129,7 @@ public class StorageConfig {
         try {
             return Integer.parseInt(value.trim());
         } catch (NumberFormatException e) {
-            logger.warn("无法解析整数值: {}, 使用默认值: {}", value, defaultValue);
+            LOGGER.warn("无法解析整数值: {}, 使用默认值: {}", value, defaultValue);
             return defaultValue;
         }
     }

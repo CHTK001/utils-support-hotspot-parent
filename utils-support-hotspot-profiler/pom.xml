@@ -6,7 +6,7 @@
     <parent>
         <groupId>com.chua</groupId>
         <artifactId>utils-support-hotspot-parent</artifactId>
-        <version>4.0.0.33</version>
+        <version>4.0.0.42</version>
     </parent>
 
     <artifactId>utils-support-hotspot-profiler</artifactId>
@@ -41,20 +41,20 @@
         <dependency>
             <groupId>com.chua</groupId>
             <artifactId>utils-support-hotspot-core</artifactId>
-            <version>4.0.0.33</version>
+            <version>4.0.0.42</version>
         </dependency>
 
         <!-- ByteBuddy for instrumentation -->
         <dependency>
             <groupId>net.bytebuddy</groupId>
             <artifactId>byte-buddy</artifactId>
-            <version>1.14.10</version>
+            <version>${bytebuddy.version}</version>
         </dependency>
 
         <dependency>
             <groupId>net.bytebuddy</groupId>
             <artifactId>byte-buddy-agent</artifactId>
-            <version>1.14.10</version>
+            <version>${bytebuddy.version}</version>
         </dependency>
 
         <!-- Lombok -->

@@ -134,7 +134,7 @@ public class Spec {
          *
          * 整合自 file-leak-detector: Java 19+ 不再需要拦截 PlainSocketImpl
          */
-        if (Runtime.version().feature() < 19) {
+        if (Listener.getJavaMajorVersion() < 19) {
             spec.add(new ClassTransformSpec("java/net/PlainSocketImpl",
                     // this is where a new file descriptor is allocated.
                     // it'll occupy a socket even before it gets connected

@@ -11,14 +11,19 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public class NamedThreadFactory implements ThreadFactory {
 
+    /** 线程池序号 */
     protected static final AtomicInteger POOL_SEQ = new AtomicInteger(1);
 
+    /** 线程编号 */
     protected final AtomicInteger mThreadNum = new AtomicInteger(1);
 
+    /** 线程名前缀 */
     protected final String mPrefix;
 
+    /** 是否为守护线程 */
     protected final boolean mDaemon;
 
+    /** 线程组 */
     protected final ThreadGroup mGroup;
 
     public NamedThreadFactory() {

@@ -21,10 +21,19 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public class MappingQpsRecorder {
     
-    private static final LogFactory logger = LogFactory.getInstance();
+    /**
+     * 日志对象
+     */
+    private static final LogFactory LOGGER = LogFactory.getInstance();
+
+    /**
+     * 单例实例
+     */
     private static final MappingQpsRecorder INSTANCE = new MappingQpsRecorder();
-    
-    // Mapping 统计（mappingId -> MappingStats）
+
+    /**
+     * Mapping 统计（mappingId -> MappingStats）
+     */
     private final Map<String, MappingStats> mappingStatsMap = new ConcurrentHashMap<>();
     
     private MappingQpsRecorder() {

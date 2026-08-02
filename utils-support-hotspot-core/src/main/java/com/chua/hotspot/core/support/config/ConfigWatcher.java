@@ -29,7 +29,10 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 public class ConfigWatcher {
 
-    private final LogFactory logger = LogFactory.getInstance();
+    /**
+     * 日志对象
+     */
+    private static final LogFactory LOGGER = LogFactory.getInstance();
 
     /** 被监视的配置文件 */
     private final String configFilePath;
@@ -37,6 +40,7 @@ public class ConfigWatcher {
     /** 监视线程运行标志 */
     private final AtomicBoolean running = new AtomicBoolean(false);
 
+    /** 监视服务 */
     /** 监视服务 */
     private WatchService watchService;
 
@@ -74,7 +78,7 @@ public class ConfigWatcher {
      */
     public void start() {
         if (!running.compareAndSet(false, true)) {
-            logger.warn("ConfigWatcher 已在运行中");
+            LOGGER.warn("ConfigWatcher 已在运行中");
             return;
         }
 
@@ -84,12 +88,12 @@ public class ConfigWatcher {
         // 尝试使用 WatchService
         if (tryStartWatchService()) {
             pollingMode = false;
-            logger.info("ConfigWatcher 启动成功（WatchService 模式）: {}", configFilePath);
+            LOGGER.info("ConfigWatcher 启动成功（WatchService 模式）: {}", configFilePath);
         } else {
             // 降级为轮询模式
             pollingMode = true;
             startPolling();
-            logger.info("ConfigWatcher 启动成功（轮询模式, 间隔 {}ms）: {}", pollingIntervalMs, configFilePath);
+            LOGGER.info("ConfigWatcher 启动成功（轮询模式, 间隔 {}ms）: {}", pollingIntervalMs, configFilePath);
         }
     }
 
@@ -100,7 +104,7 @@ public class ConfigWatcher {
         try {
             File file = new File(configFilePath);
             if (!file.exists()) {
-                logger.warn("配置文件不存在，将使用轮询模式: {}", configFilePath);
+                LOGGER.warn("配置文件不存在，将使用轮询模式: {}", configFilePath);
                 return false;
             }
 
@@ -136,14 +140,14 @@ public class ConfigWatcher {
                         Thread.currentThread().interrupt();
                         break;
                     } catch (Exception e) {
-                        logger.warn("ConfigWatcher 事件处理异常", e);
+                        LOGGER.warn("ConfigWatcher 事件处理异常", e);
                     }
                 }
             });
 
             return true;
         } catch (Exception e) {
-            logger.warn("WatchService 不可用，降级为轮询模式", e);
+            LOGGER.warn("WatchService 不可用，降级为轮询模式", e);
             return false;
         }
     }
@@ -167,7 +171,7 @@ public class ConfigWatcher {
                     Thread.currentThread().interrupt();
                     break;
                 } catch (Exception e) {
-                    logger.warn("ConfigWatcher 轮询异常", e);
+                    LOGGER.warn("ConfigWatcher 轮询异常", e);
                 }
             }
         });
@@ -186,7 +190,7 @@ public class ConfigWatcher {
                 watchService.close();
             }
         } catch (Exception e) {
-            logger.warn("关闭 WatchService 异常", e);
+            LOGGER.warn("关闭 WatchService 异常", e);
         }
 
         if (executor != null) {
@@ -200,7 +204,7 @@ public class ConfigWatcher {
             }
         }
 
-        logger.info("ConfigWatcher 已停止");
+        LOGGER.info("ConfigWatcher 已停止");
     }
 
     /**

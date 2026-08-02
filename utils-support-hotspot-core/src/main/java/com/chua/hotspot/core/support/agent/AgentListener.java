@@ -14,7 +14,11 @@ import net.bytebuddy.utility.JavaModule;
  * @author CH
  */
 public class AgentListener implements AgentBuilder.Listener {
-    final LogFactory logFactory = LogFactory.getInstance();
+
+    /**
+     * 日志对象
+     */
+    final LogFactory LOGGER = LogFactory.getInstance();
 
     @Override
     public void onDiscovery(String typeName, ClassLoader classLoader, JavaModule module, boolean loaded) {
@@ -36,6 +40,15 @@ public class AgentListener implements AgentBuilder.Listener {
             return;
         }
         AgentSelfMonitor.getInstance().recordTransformFail(typeName);
+        // 打印异常详情（受 --add-opens 限制时尤其重要）
+        LOGGER.warn("类增强失败: {} - {}", typeName, throwable.toString());
+        Throwable cause = throwable.getCause();
+        int depth = 0;
+        while (cause != null && depth < 5) {
+            LOGGER.warn("  caused by: {} - {}", cause.getClass().getName(), cause.getMessage());
+            cause = cause.getCause();
+            depth++;
+        }
     }
 
     @Override

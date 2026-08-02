@@ -37,15 +37,18 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class SpyHandlerImpl implements SpyHandler {
 
-    private final LogFactory logFactory = LogFactory.getInstance();
+    /**
+     * 日志对象
+     */
+    private final LogFactory LOGGER = LogFactory.getInstance();
 
     /**
-     * 插件名 → 插件实例 映射
+     * 插件名到实例的映射
      */
     private final Map<String, BytebuddyPlugin> pluginMap = new ConcurrentHashMap<>();
 
     /**
-     * 目标类名 → 插件名 映射（用于快速路由）
+     * 目标类名到插件名的映射（用于快速路由）
      */
     private final Map<String, String> classPluginMap = new ConcurrentHashMap<>();
 
@@ -67,11 +70,11 @@ public class SpyHandlerImpl implements SpyHandler {
             if (plugin instanceof BytebuddyPlugin) {
                 BytebuddyPlugin bp = (BytebuddyPlugin) plugin;
                 pluginMap.put(bp.name(), bp);
-                logFactory.debug("SpyHandler 注册插件: {}", bp.name());
+                LOGGER.debug("SpyHandler 注册插件: {}", bp.name());
             }
         }
 
-        logFactory.info("SpyHandler 初始化完成，注册了 {} 个插件", pluginMap.size());
+        LOGGER.info("SpyHandler 初始化完成，注册了 {} 个插件", pluginMap.size());
         initialized = true;
     }
 
@@ -97,8 +100,9 @@ public class SpyHandlerImpl implements SpyHandler {
             try {
                 plugin.spyBefore(className, methodName, target, args);
             } catch (Throwable e) {
-                logFactory.debug("Spy onBefore 回调异常: plugin={}, class={}, method={}, error={}",
-                        plugin.name(), className, methodName, e.getMessage());
+                LOGGER.warn("Spy onBefore 回调异常: plugin={}, class={}, method={}, error={}",
+                        plugin.name(), className, methodName, e.toString());
+                LOGGER.warn("StackTrace: ", e);
             }
         }
     }
@@ -110,8 +114,9 @@ public class SpyHandlerImpl implements SpyHandler {
             try {
                 plugin.spyAfter(className, methodName, target, args, result);
             } catch (Throwable e) {
-                logFactory.debug("Spy onAfter 回调异常: plugin={}, class={}, method={}, error={}",
-                        plugin.name(), className, methodName, e.getMessage());
+                LOGGER.warn("Spy onAfter 回调异常: plugin={}, class={}, method={}, error={}",
+                        plugin.name(), className, methodName, e.toString());
+                LOGGER.warn("StackTrace: ", e);
             }
         }
     }
@@ -123,8 +128,9 @@ public class SpyHandlerImpl implements SpyHandler {
             try {
                 plugin.spyError(className, methodName, target, args, throwable);
             } catch (Throwable e) {
-                logFactory.debug("Spy onError 回调异常: plugin={}, class={}, method={}, error={}",
-                        plugin.name(), className, methodName, e.getMessage());
+                LOGGER.warn("Spy onError 回调异常: plugin={}, class={}, method={}, error={}",
+                        plugin.name(), className, methodName, e.toString());
+                LOGGER.warn("StackTrace: ", e);
             }
         }
     }
@@ -200,7 +206,8 @@ public class SpyHandlerImpl implements SpyHandler {
                 return className.contains("RealCall");
             case "Tomcat9x":
             case "Tomcat10x":
-                return className.contains("CoyoteAdapter");
+            case "Tomcat":
+                return className.contains("CoyoteAdapter") || className.contains("StandardHostValve");
             case "Jetty":
                 return className.contains("HttpChannel");
             case "Undertow":

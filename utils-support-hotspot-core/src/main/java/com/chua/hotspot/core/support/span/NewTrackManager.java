@@ -156,17 +156,22 @@ public final class NewTrackManager {
      */
     public static Span createEntrySpan(Object[] args) {
         Span currentSpan = getCurrentSpan();
-        Span span = doCreateSpan();
-        
-        // 如果是第一个 Span，初始化链路 ID
+
+        // 修复：先决定 linkId，再调用 doCreateSpan
+        String resolvedLinkId = null;
         if (currentSpan == null) {
-            String linkId = getRequestLinkId(args);
-            if (linkId == null) {
-                linkId = UUID.randomUUID().toString();
+            resolvedLinkId = getRequestLinkId(args);
+            if (resolvedLinkId == null) {
+                resolvedLinkId = UUID.randomUUID().toString();
             }
-            TrackContext.setLinkId(linkId);
+            TrackContext.setLinkId(resolvedLinkId);
         }
-        
+
+        Span span = doCreateSpan();
+        if (resolvedLinkId != null) {
+            span.setLinkId(resolvedLinkId);
+        }
+
         List<Span> list = SPAN_STACK.get();
         if (list.isEmpty()) {
             span.setId(span.getLinkId());

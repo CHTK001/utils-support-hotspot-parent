@@ -1,19 +1,23 @@
-# Utils Support Hotspot Core - 热点监控核心模块
+# utils-support-hotspot-core
 
-热点监控核心模块
+Utils Support Hotspot Core - 热点监控核心模块
 
-## 功能特性
+        该模块提供专业的功能支持和工具集成。
 
-### 统一返回结果增强（ReturnResult / ReturnPageResult）
-- ReturnPageResult 新增 timestamp、isOk()/isEmpty() 与 toString() 调试输出
-- ReturnResult 新增 isFailure() 方法，便于快速判断失败
-- 两者统一了 toString 输出格式，便于日志与调试收敛
+        主要特性：
+        - 🔧 功能完整：提供完整的功能实现
+        - 🚀 性能优化：高性能的实现方案
+        - 🛡️ 稳定可靠：经过充分测试和验证
+        - 📚 文档完善：详细的使用文档和示例
+        - 🔄 易于集成：简单的 API 和配置方式
 
-### 🚀 核心功能
-- 📦 模块化设计：提供完整的功能封装
-- 🔧 易于集成：简单的配置和使用方式
-- 📚 完整文档：详细的使用说明和示例
-- 🛡️ 稳定可靠：经过充分测试的功能实现
+        适用场景：
+        - 企业级应用开发
+        - 系统集成项目
+        - 工具链构建
+        - 第三方服务集成
+
+---
 
 ## 快速开始
 
@@ -23,28 +27,39 @@
 <dependency>
     <groupId>com.chua</groupId>
     <artifactId>utils-support-hotspot-core</artifactId>
-    <version>4.0.0.30</version>
+    <version>${project.version}</version>
 </dependency>
 ```
 
-### 2. 基本使用
+---
 
-```java
-// TODO: 添加使用示例
-```
+## 功能概览
+
+| 类/接口 | 说明 |
+|---------|------|
+| `AgentBootstrap` | Agent 核心启动入口 由 agent 薄壳通过反射调用，在 HotspotPluginClassLoader 中执行所有核心初始化逻辑。 |
+| `AgentFactory` | Agent 工厂 - 构建和安装 ByteBuddy AgentBuilder 支持 Advice + Spy 模式和旧版 MethodDelegation 模 |
+| `AgentListener` | Agent 构建监听器 记录字节码增强事件并同步到 AgentSelfMonitor |
+| `SpyAdvice` | Spy Advice 内联通知类 由 ByteBuddy Advice 内联到目标方法中，调用 Spy 桥接类的静态方法。 |
+| `AbstractVersionTransform` | Transform |
+| `TransformFactory` | TransformFactory |
+| `VersionTransform` | Transform |
+| `AlertLevel` | 告警级别枚举 定义告警的严重程度，从低到高分为 INFO、WARN、ERROR、CRITICAL @version 4.0.0.34 |
+| `AlertManager` | 告警管理器 核心职责： 管理告警规则的注册、更新、删除 接收指标数据并评估是否触发告警 记录告警历史并去重（同一规则告警间隔控制） 通过 ReportFacto |
+| `AlertRecord` | 告警记录 记录一次告警的完整信息，包括触发规则、指标值、告警时间等。 @version 4.0.0.34 |
+| ... | 共 170 个类 |
+
+---
 
 ## 配置说明
 
-```properties
-# TODO: 添加配置说明
+本模块为零配置模块，引入依赖后即可使用。
+
+---
+
+## 依赖关系
+
 ```
-
-## 注意事项
-
-1. **环境要求**: Java 21+
-2. **依赖管理**: 确保相关依赖版本兼容
-3. **性能优化**: 根据实际需求调整配置参数
-
-## 许可证
-
-本项目采用 Apache License 2.0 许可证。
+utils-support-hotspot-core
+├── utils-support-hotspot-spy
+```

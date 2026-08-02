@@ -1,5 +1,8 @@
 package com.chua.hotspot.core.support.server.http;
 
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
 /**
  * API 统一响应结果
  *
@@ -7,6 +10,8 @@ package com.chua.hotspot.core.support.server.http;
  * @version 4.0.0.34
  * @since 2024/12/12
  */
+@Data
+@NoArgsConstructor
 public class ApiResult<T> {
 
     /**
@@ -29,45 +34,18 @@ public class ApiResult<T> {
      */
     private long timestamp;
 
-    public ApiResult() {
-    }
-
+    /**
+     * 构造函数
+     *
+     * @param code      状态码
+     * @param message   消息
+     * @param data      数据
+     * @param timestamp 时间戳
+     */
     public ApiResult(String code, String message, T data, long timestamp) {
         this.code = code;
         this.message = message;
         this.data = data;
-        this.timestamp = timestamp;
-    }
-
-    public String getCode() {
-        return code;
-    }
-
-    public void setCode(String code) {
-        this.code = code;
-    }
-
-    public String getMessage() {
-        return message;
-    }
-
-    public void setMessage(String message) {
-        this.message = message;
-    }
-
-    public T getData() {
-        return data;
-    }
-
-    public void setData(T data) {
-        this.data = data;
-    }
-
-    public long getTimestamp() {
-        return timestamp;
-    }
-
-    public void setTimestamp(long timestamp) {
         this.timestamp = timestamp;
     }
 

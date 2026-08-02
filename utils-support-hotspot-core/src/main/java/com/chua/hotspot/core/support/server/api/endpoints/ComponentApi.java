@@ -21,6 +21,11 @@ import java.util.Map;
  */
 public class ComponentApi implements ApiEndpoint {
 
+    /**
+     * 日志对象
+     */
+    private static final LogFactory LOGGER = LogFactory.getInstance();
+
     @Override
     public String name() {
         return "component";
@@ -33,7 +38,7 @@ public class ComponentApi implements ApiEndpoint {
             return getCurrentStats(request);
             
         } catch (Exception e) {
-            LogFactory.getInstance().error("处理组件统计请求失败: {}", e.getMessage());
+            LOGGER.error("处理组件统计请求失败: {}", e.getMessage());
             return error("内部错误: " + e.getMessage());
         }
     }

@@ -14,7 +14,7 @@ import com.chua.hotspot.core.support.log.LogFactory;
 public interface Plugin extends Constant {
 
     /**
-     * 日志工厂实例
+     * 日志对象
      */
     LogFactory logFactory = LogFactory.getInstance();
 

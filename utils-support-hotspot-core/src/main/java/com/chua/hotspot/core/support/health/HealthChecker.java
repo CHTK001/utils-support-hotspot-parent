@@ -25,9 +25,15 @@ import java.util.concurrent.CopyOnWriteArrayList;
  */
 public class HealthChecker {
 
+    /**
+     * 单例实例
+     */
     private static final HealthChecker INSTANCE = new HealthChecker();
 
-    private final LogFactory logger = LogFactory.getInstance();
+    /**
+     * 日志对象
+     */
+    private static final LogFactory LOGGER = LogFactory.getInstance();
 
     /** 自定义检查器列表 */
     private final List<HealthCheck> customCheckers = new CopyOnWriteArrayList<>();

@@ -28,6 +28,16 @@ replay_pid*
 *.class
 *.jar
 
+# Database files
+*.db
+
+# Agent config (local)
+agent-config.json
+
+# Test data
+utils-support-hotspot-core/src/test/
+META-INF/
+
 # Project files, i.e. `.project`, `.actionScriptProperties` and `.flexProperties`
 # should NOT be excluded as they contain compiler settings and other important
 # information for Eclipse / Flash Builder.

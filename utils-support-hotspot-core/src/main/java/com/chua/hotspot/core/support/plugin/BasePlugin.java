@@ -31,8 +31,16 @@ import java.util.concurrent.ConcurrentHashMap;
  * @author CH
  */
 public abstract class BasePlugin implements Plugin {
+
+    /**
+     * 类池
+     */
     protected static ClassPool classPool = ClassPool.getDefault();
-    static LogFactory logFactory = LogFactory.getInstance();
+
+    /**
+     * 日志对象
+     */
+    static LogFactory LOGGER = LogFactory.getInstance();
 
     static {
         ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
@@ -40,7 +48,7 @@ public abstract class BasePlugin implements Plugin {
         classPool.insertClassPath(new ClassClassPath(FileHandlerFactory.class));
         try {
             String string = JarPathUtils.getJarPath(Plugin.class);
-            logFactory.info("Plugin path: {}", string);
+            LOGGER.info("Plugin path: {}", string);
             classPool.appendClassPath(string);
         } catch (NotFoundException ignored) {
         }
@@ -120,7 +128,7 @@ public abstract class BasePlugin implements Plugin {
             });
             return handle.invokeWithArguments(args);
         } catch (Throwable e) {
-            logFactory.debug("MethodHandle 调用失败: {}#{}", targetClass.getName(), methodName);
+            LOGGER.debug("MethodHandle 调用失败: {}#{}", targetClass.getName(), methodName);
             return null;
         }
     }
@@ -184,7 +192,7 @@ public abstract class BasePlugin implements Plugin {
     public void initComplete() {
         InstrumentationFactory.getInstance().addTransformer(new TransformerBaseImpl(methodMap), true);
         reTransform();
-        logFactory.info("{} plugin init complete", name());
+        LOGGER.info("{} plugin init complete", name());
     }
 
 

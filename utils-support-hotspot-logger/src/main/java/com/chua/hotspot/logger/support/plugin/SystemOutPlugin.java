@@ -34,6 +34,11 @@ public class SystemOutPlugin extends BytebuddyPlugin {
     private static final int MAX_MESSAGE_LENGTH = 1024;
 
     @Override
+    public boolean useLegacyMethodDelegation() {
+        return false;
+    }
+
+    @Override
     public String name() {
         return "SystemOut";
     }

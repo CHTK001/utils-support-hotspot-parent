@@ -27,14 +27,29 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public class ExceptionRecorder {
     
-    private static final LogFactory logger = LogFactory.getInstance();
+    /**
+     * 日志对象
+     */
+    private static final LogFactory LOGGER = LogFactory.getInstance();
+
+    /**
+     * 单例实例
+     */
     private static final ExceptionRecorder INSTANCE = new ExceptionRecorder();
-    
-    // 最近异常（限制 1000 条）
+
+    /**
+     * 最近异常（限制 1000 条）
+     */
     private final ConcurrentLinkedQueue<ExceptionInfo> recentExceptions = new ConcurrentLinkedQueue<>();
+
+    /**
+     * 最近异常最大数量
+     */
     private static final int MAX_RECENT_EXCEPTIONS = 1000;
-    
-    // 异常类型统计
+
+    /**
+     * 异常类型统计
+     */
     private final Map<String, ExceptionStats> exceptionStats = new ConcurrentHashMap<>();
     
     private ExceptionRecorder() {
@@ -59,7 +74,7 @@ public class ExceptionRecorder {
             }
         });
         
-        logger.info("全局异常处理器已安装");
+        LOGGER.info("全局异常处理器已安装");
     }
     
     /**
@@ -102,10 +117,10 @@ public class ExceptionRecorder {
             // 使用 DataPusher 推送
             DataPusher.getInstance().pushException(info.toMap());
             
-            logger.debug("已记录异常: {} 在线程: {}", exceptionType, threadName);
+            LOGGER.debug("已记录异常: {} 在线程: {}", exceptionType, threadName);
             
         } catch (Exception e) {
-            logger.debug("记录异常失败: {}", e.getMessage());
+            LOGGER.debug("记录异常失败: {}", e.getMessage());
         }
     }
     
@@ -185,7 +200,7 @@ public class ExceptionRecorder {
     public void clear() {
         recentExceptions.clear();
         exceptionStats.clear();
-        logger.info("异常统计已清除");
+        LOGGER.info("异常统计已清除");
     }
     
     /**

@@ -28,16 +28,35 @@ import java.util.stream.Collectors;
  * @version 4.0.0.36
  */
 public class HttpPerformanceRecorder {
-    
+
+    /**
+     * 单例实例
+     */
     private static final HttpPerformanceRecorder INSTANCE = new HttpPerformanceRecorder();
-    
-    // Endpoint statistics (url+method -> EndpointMetrics)
+
+    /**
+     * 默认慢请求阈值（毫秒）
+     */
+    private static final long DEFAULT_SLOW_THRESHOLD_MS = 1000L;
+
+    /**
+     * 日志对象
+     */
+    private static final LogFactory LOGGER = LogFactory.getInstance();
+
+    /**
+     * 端点统计（url+method -> EndpointMetrics）
+     */
     private final Map<String, EndpointMetrics> metricsMap = new ConcurrentHashMap<>();
-    
-    // Slow request threshold (default 1000ms)
-    private volatile long slowThreshold = 1000;
-    
-    // 是否已初始化
+
+    /**
+     * 慢请求阈值（毫秒）
+     */
+    private volatile long slowThreshold = DEFAULT_SLOW_THRESHOLD_MS;
+
+    /**
+     * 是否已初始化
+     */
     private volatile boolean initialized = false;
     
     // 持久化任务
@@ -108,9 +127,9 @@ public class HttpPerformanceRecorder {
                 }
             }
             
-            LogFactory.getInstance().debug("从SQL加载HTTP性能数据: {} 个端点", metricsMap.size());
+            LOGGER.debug("从SQL加载HTTP性能数据: {} 个端点", metricsMap.size());
         } catch (Exception e) {
-            LogFactory.getInstance().debug("加载HTTP性能数据失败: {}", e.getMessage());
+            LOGGER.debug("加载HTTP性能数据失败: {}", e.getMessage());
         }
     }
     
@@ -155,7 +174,7 @@ public class HttpPerformanceRecorder {
             pstmt.executeBatch();
             }
         } catch (Exception e) {
-            LogFactory.getInstance().debug("保存HTTP性能数据失败: {}", e.getMessage());
+            LOGGER.debug("保存HTTP性能数据失败: {}", e.getMessage());
         }
     }
     

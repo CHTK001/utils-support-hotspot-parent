@@ -21,11 +21,29 @@ import java.util.concurrent.locks.ReentrantLock;
  */
 public class StorageService {
     
-    private static final LogFactory logger = LogFactory.getInstance();
+    /**
+     * 日志对象
+     */
+    private static final LogFactory LOGGER = LogFactory.getInstance();
+
+    /**
+     * 单例实例
+     */
     private static final StorageService INSTANCE = new StorageService();
     
+    /**
+     * 存储配置（单例）
+     */
     private final StorageConfig config = StorageConfig.getInstance();
+
+    /**
+     * 定时刷新调度器（单线程）
+     */
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
+
+    /**
+     * 名称 -> 缓冲队列映射
+     */
     private final ConcurrentHashMap<String, BufferQueue<?>> buffers = new ConcurrentHashMap<>();
     
     private StorageService() {
@@ -35,7 +53,7 @@ public class StorageService {
             config.getFlushIntervalSeconds(), 
             TimeUnit.SECONDS);
         
-        logger.info("StorageService 初始化完成，刷新间隔: {}秒", config.getFlushIntervalSeconds());
+        LOGGER.info("StorageService 初始化完成，刷新间隔: {}秒", config.getFlushIntervalSeconds());
     }
     
     public static StorageService getInstance() {
@@ -47,7 +65,7 @@ public class StorageService {
      */
     public <T> void registerBuffer(String name, BatchWriter<T> writer) {
         buffers.putIfAbsent(name, new BufferQueue<>(name, writer, config.getBatchSize()));
-        logger.debug("注册存储缓冲区: {}", name);
+        LOGGER.debug("注册存储缓冲区: {}", name);
     }
     
     /**
@@ -57,7 +75,7 @@ public class StorageService {
     public <T> void add(String bufferName, T data) {
         BufferQueue<T> buffer = (BufferQueue<T>) buffers.get(bufferName);
         if (buffer == null) {
-            logger.warn("缓冲区不存在: {}", bufferName);
+            LOGGER.warn("缓冲区不存在: {}", bufferName);
             return;
         }
         buffer.add(data);
@@ -81,7 +99,7 @@ public class StorageService {
             try {
                 buffer.flush();
             } catch (Exception e) {
-                logger.error("刷新缓冲区失败: {}", buffer.name, e);
+                LOGGER.error("刷新缓冲区失败: {}", buffer.name, e);
             }
         }
     }
@@ -90,7 +108,7 @@ public class StorageService {
      * 关闭服务
      */
     public void shutdown() {
-        logger.info("关闭 StorageService...");
+        LOGGER.info("关闭 StorageService...");
         flushAll();
         scheduler.shutdown();
         try {
@@ -119,10 +137,15 @@ public class StorageService {
      * 缓冲队列
      */
     private static class BufferQueue<T> {
+        /** 缓冲队列名称 */
         private final String name;
+        /** 批量写入器 */
         private final BatchWriter<T> writer;
+        /** 批量大小 */
         private final int batchSize;
+        /** 缓冲列表 */
         private final List<T> buffer;
+        /** 缓冲区锁 */
         private final ReentrantLock lock = new ReentrantLock();
         
         BufferQueue(String name, BatchWriter<T> writer, int batchSize) {
@@ -172,9 +195,9 @@ public class StorageService {
             if (toWrite != null && !toWrite.isEmpty()) {
                 try {
                     writer.writeBatch(toWrite);
-                    logger.debug("批量写入完成: buffer={}, count={}", name, toWrite.size());
+                    LOGGER.debug("批量写入完成: buffer={}, count={}", name, toWrite.size());
                 } catch (SQLException e) {
-                    logger.error("批量写入失败: buffer={}, count={}", name, toWrite.size(), e);
+                    LOGGER.error("批量写入失败: buffer={}, count={}", name, toWrite.size(), e);
                 }
             }
         }
@@ -184,18 +207,31 @@ public class StorageService {
      * HTTP性能数据
      */
     public static class HttpPerfData {
+        /** \u7aef\u70b9\u8def\u5f84 */
         public String endpoint;
+        /** HTTP\u65b9\u6cd5 */
         public String method;
+        /** \u8bf7\u6c42\u603b\u6570 */
         public long requestCount;
+        /** \u603b\u8017\u65f6(\u6beb\u79d2) */
         public long totalTime;
+        /** \u5e73\u5747\u8017\u65f6(\u6beb\u79d2) */
         public long avgTime;
+        /** \u6700\u5c0f\u8017\u65f6(\u6beb\u79d2) */
         public long minTime;
+        /** \u6700\u5927\u8017\u65f6(\u6beb\u79d2) */
         public long maxTime;
+        /** 50\u5206\u4f4d\u6570(\u6beb\u79d2) */
         public long p50;
+        /** 90\u5206\u4f4d\u6570(\u6beb\u79d2) */
         public long p90;
+        /** 95\u5206\u4f4d\u6570(\u6beb\u79d2) */
         public long p95;
+        /** 99\u5206\u4f4d\u6570(\u6beb\u79d2) */
         public long p99;
+        /** \u9519\u8bef\u8ba1\u6570 */
         public int errorCount;
+        /** \u65f6\u95f4\u6233(\u6beb\u79d2) */
         public long timestamp;
         
         public HttpPerfData(String endpoint, String method, long requestCount, long totalTime,
@@ -222,12 +258,19 @@ public class StorageService {
      * 方法性能数据
      */
     public static class MethodPerfData {
+        /** \u65b9\u6cd5\u7b7e\u540d */
         public String methodSignature;
+        /** \u8c03\u7528\u603b\u6570 */
         public long callCount;
+        /** \u603b\u8017\u65f6(\u6beb\u79d2) */
         public long totalTime;
+        /** \u5e73\u5747\u8017\u65f6(\u6beb\u79d2) */
         public long avgTime;
+        /** \u6700\u5c0f\u8017\u65f6(\u6beb\u79d2) */
         public long minTime;
+        /** \u6700\u5927\u8017\u65f6(\u6beb\u79d2) */
         public long maxTime;
+        /** \u65f6\u95f4\u6233(\u6beb\u79d2) */
         public long timestamp;
         
         public MethodPerfData(String methodSignature, long callCount, long totalTime,

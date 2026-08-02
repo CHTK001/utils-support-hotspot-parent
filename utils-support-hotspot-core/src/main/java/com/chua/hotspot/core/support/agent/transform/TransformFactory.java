@@ -31,10 +31,29 @@ import java.util.concurrent.ConcurrentHashMap;
 @SuppressWarnings("ALL")
 public class TransformFactory {
 
+    /**
+     * 单例实例
+     */
     static final TransformFactory INSTANCE = new TransformFactory();
-    final LogFactory logFactory = LogFactory.getInstance();
+
+    /**
+     * 日志对象
+     */
+    final LogFactory LOGGER = LogFactory.getInstance();
+
+    /**
+     * 编译器
+     */
     final Compiler compiler = new JdkCompiler();
+
+    /**
+     * 字节码转换代理类
+     */
     private final Class<?> versionTransformType;
+
+    /**
+     * 转换器映射（按版本）
+     */
     Map<Version, Class<? extends VersionTransform>> transformList = new ConcurrentHashMap<>();
 
     public TransformFactory() {

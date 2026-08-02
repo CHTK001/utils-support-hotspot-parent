@@ -21,6 +21,11 @@ import java.util.*;
 public class ObjectApi implements ApiEndpoint {
 
     /**
+     * 日志对象
+     */
+    private static final LogFactory LOGGER = LogFactory.getInstance();
+
+    /**
      * Instrumentation 实例（由 Agent 注入）
      */
     private static Instrumentation instrumentation = InstrumentationFactory.getInstance().instrumentation;
@@ -37,7 +42,7 @@ public class ObjectApi implements ApiEndpoint {
 
     @Override
     public Object handle(HttpRequest request) {
-        LogFactory.getInstance().debug("获取对象信息");
+        LOGGER.debug("获取对象信息");
         
         String filterName = request.getParam("filterName");
         int page = request.getIntParam("page", 1);
@@ -91,7 +96,7 @@ public class ObjectApi implements ApiEndpoint {
             return response;
             
         } catch (Exception e) {
-            LogFactory.getInstance().error("获取对象信息失败: {}", e.getMessage());
+            LOGGER.error("获取对象信息失败: {}", e.getMessage());
             Map<String, Object> response = new HashMap<>();
             response.put("data", result);
             response.put("total", 0);

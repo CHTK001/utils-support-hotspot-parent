@@ -13,8 +13,19 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class FileHandlerFactory {
 
-    static final LogFactory logger = LogFactory.getInstance();
+    /**
+     * 日志对象
+     */
+    static final LogFactory LOGGER = LogFactory.getInstance();
+
+    /**
+     * 文件句柄调用映射
+     */
     static final Map<Object, FileHandlerInfo> METHOD_CALL_MAP = new ConcurrentHashMap<>();
+
+    /**
+     * 单例实例
+     */
     private static final FileHandlerFactory FILE_HANDLER = new FileHandlerFactory();
 
     public static FileHandlerFactory getInstance() {
@@ -27,12 +38,12 @@ public class FileHandlerFactory {
             return;
         }
         METHOD_CALL_MAP.put(_this, new FileHandlerInfo(_this, args));
-        logger.info("句柄数量:{}", METHOD_CALL_MAP.size());
+        LOGGER.info("句柄数量:{}", METHOD_CALL_MAP.size());
     }
 
     public static void close(Object _this, Object[] args) {
         METHOD_CALL_MAP.remove(_this);
-        logger.info("句柄数量:{}", METHOD_CALL_MAP.size());
+        LOGGER.info("句柄数量:{}", METHOD_CALL_MAP.size());
 
     }
 

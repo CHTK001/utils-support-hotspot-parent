@@ -26,9 +26,15 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public class MetricsExporter {
 
+    /**
+     * 单例实例
+     */
     private static final MetricsExporter INSTANCE = new MetricsExporter();
 
-    private final LogFactory logger = LogFactory.getInstance();
+    /**
+     * 日志对象
+     */
+    private static final LogFactory LOGGER = LogFactory.getInstance();
 
     /** 自定义计数器 */
     private final Map<String, AtomicLong> counters = new ConcurrentHashMap<>();
